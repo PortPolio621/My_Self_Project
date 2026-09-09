@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput } from "react-native";
 
 import { Card } from "@/components/Card";
 import { NumberField } from "@/components/NumberField";
+import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
 import { calculateGoalEta, formatMeso } from "@/utils/meso";
@@ -28,7 +29,7 @@ export function GoalScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <Screen>
       <Text style={styles.title}>목표 설정</Text>
 
       <Card style={styles.card}>
@@ -77,23 +78,16 @@ export function GoalScreen() {
           </Pressable>
         )}
       </Card>
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
   title: {
     color: colors.text,
     fontSize: 26,
     fontWeight: "700",
+    marginTop: 8,
     marginBottom: 20,
   },
   card: {

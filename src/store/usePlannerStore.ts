@@ -2,23 +2,26 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-import { BossEntry, Goal, PlannerState } from "@/types";
+import { HUNTING_KILL_COUNT_MIN } from "@/utils/meso";
+import { Goal, PlannerState } from "@/types";
 
 interface PlannerActions {
   setCurrentMeso: (amount: number) => void;
-  setDailyFarmingIncome: (amount: number) => void;
-  addBossEntry: (entry: Omit<BossEntry, "id">) => void;
-  updateBossEntry: (id: string, patch: Partial<Omit<BossEntry, "id">>) => void;
-  removeBossEntry: (id: string) => void;
-  toggleBossCleared: (id: string) => void;
-  resetWeeklyBossClears: () => void;
+  setHuntingKillCount: (count: number) => void;
+  setHuntingMinutesPerDay: (minutes: number) => void;
+  setSolErdaPrice: (price: number) => void;
+  setSolErdaCount: (count: number) => void;
+  setWeeklyBossIncome: (amount: number) => void;
   setGoal: (goal: Goal | null) => void;
 }
 
 const initialState: PlannerState = {
   currentMeso: 0,
-  dailyFarmingIncome: 0,
-  bossEntries: [],
+  huntingKillCount: HUNTING_KILL_COUNT_MIN,
+  huntingMinutesPerDay: 0,
+  solErdaPrice: 0,
+  solErdaCount: 0,
+  weeklyBossIncome: 0,
   goal: null,
 };
 
@@ -29,40 +32,17 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
 
       setCurrentMeso: (amount) => set({ currentMeso: Math.max(amount, 0) }),
 
-      setDailyFarmingIncome: (amount) =>
-        set({ dailyFarmingIncome: Math.max(amount, 0) }),
+      setHuntingKillCount: (count) => set({ huntingKillCount: count }),
 
-      addBossEntry: (entry) =>
-        set((state) => ({
-          bossEntries: [
-            ...state.bossEntries,
-            { ...entry, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` },
-          ],
-        })),
+      setHuntingMinutesPerDay: (minutes) =>
+        set({ huntingMinutesPerDay: Math.max(minutes, 0) }),
 
-      updateBossEntry: (id, patch) =>
-        set((state) => ({
-          bossEntries: state.bossEntries.map((entry) =>
-            entry.id === id ? { ...entry, ...patch } : entry
-          ),
-        })),
+      setSolErdaPrice: (price) => set({ solErdaPrice: Math.max(price, 0) }),
 
-      removeBossEntry: (id) =>
-        set((state) => ({
-          bossEntries: state.bossEntries.filter((entry) => entry.id !== id),
-        })),
+      setSolErdaCount: (count) => set({ solErdaCount: Math.max(count, 0) }),
 
-      toggleBossCleared: (id) =>
-        set((state) => ({
-          bossEntries: state.bossEntries.map((entry) =>
-            entry.id === id ? { ...entry, cleared: !entry.cleared } : entry
-          ),
-        })),
-
-      resetWeeklyBossClears: () =>
-        set((state) => ({
-          bossEntries: state.bossEntries.map((entry) => ({ ...entry, cleared: false })),
-        })),
+      setWeeklyBossIncome: (amount) =>
+        set({ weeklyBossIncome: Math.max(amount, 0) }),
 
       setGoal: (goal) => set({ goal }),
     }),
