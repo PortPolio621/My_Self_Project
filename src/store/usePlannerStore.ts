@@ -8,20 +8,28 @@ import { Goal, PlannerState } from "@/types";
 interface PlannerActions {
   setCurrentMeso: (amount: number) => void;
   setHuntingKillCount: (count: number) => void;
-  setHuntingMinutesPerDay: (minutes: number) => void;
+  setHuntingMinutes: (minutes: number) => void;
+  setMesoGainPercent: (percent: number) => void;
+  toggleElixirOfWealth: () => void;
+  toggleUnionWealth: () => void;
   setSolErdaPrice: (price: number) => void;
   setSolErdaCount: (count: number) => void;
   setWeeklyBossIncome: (amount: number) => void;
+  confirmDailyHuntingIncome: (totalMeso: number) => void;
   setGoal: (goal: Goal | null) => void;
 }
 
 const initialState: PlannerState = {
   currentMeso: 0,
   huntingKillCount: HUNTING_KILL_COUNT_MIN,
-  huntingMinutesPerDay: 0,
+  huntingMinutes: 0,
+  mesoGainPercent: 0,
+  useElixirOfWealth: false,
+  useUnionWealth: false,
   solErdaPrice: 0,
   solErdaCount: 0,
   weeklyBossIncome: 0,
+  huntingLog: [],
   goal: null,
 };
 
@@ -34,8 +42,16 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
 
       setHuntingKillCount: (count) => set({ huntingKillCount: count }),
 
-      setHuntingMinutesPerDay: (minutes) =>
-        set({ huntingMinutesPerDay: Math.max(minutes, 0) }),
+      setHuntingMinutes: (minutes) => set({ huntingMinutes: Math.max(minutes, 0) }),
+
+      setMesoGainPercent: (percent) =>
+        set({ mesoGainPercent: Math.max(percent, 0) }),
+
+      toggleElixirOfWealth: () =>
+        set((state) => ({ useElixirOfWealth: !state.useElixirOfWealth })),
+
+      toggleUnionWealth: () =>
+        set((state) => ({ useUnionWealth: !state.useUnionWealth })),
 
       setSolErdaPrice: (price) => set({ solErdaPrice: Math.max(price, 0) }),
 
@@ -43,6 +59,18 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
 
       setWeeklyBossIncome: (amount) =>
         set({ weeklyBossIncome: Math.max(amount, 0) }),
+
+      confirmDailyHuntingIncome: (totalMeso) =>
+        set((state) => ({
+          huntingLog: [
+            ...state.huntingLog,
+            {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              recordedAt: new Date().toISOString(),
+              totalMeso,
+            },
+          ],
+        })),
 
       setGoal: (goal) => set({ goal }),
     }),
