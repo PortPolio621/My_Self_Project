@@ -10,6 +10,7 @@ import {
   HUNTING_KILL_COUNT_MAX,
   HUNTING_KILL_COUNT_MIN,
   formatMeso,
+  getAverageLoggedHuntingIncome,
   getDailyHuntingIncome,
   getMesoPerMinuteFromKills,
   getSolErdaIncome,
@@ -20,17 +21,41 @@ const KILL_COUNT_OPTIONS = Array.from(
   (_, i) => HUNTING_KILL_COUNT_MIN + i
 );
 
+function CheckboxRow({
+  label,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Pressable style={styles.checkboxRow} onPress={onToggle}>
+      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+        {checked && <Text style={styles.checkmark}>✓</Text>}
+      </View>
+      <Text style={styles.checkboxLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function IncomeScreen() {
   const state = usePlannerStore();
   const setCurrentMeso = usePlannerStore((s) => s.setCurrentMeso);
   const setHuntingKillCount = usePlannerStore((s) => s.setHuntingKillCount);
-  const setHuntingMinutesPerDay = usePlannerStore((s) => s.setHuntingMinutesPerDay);
+  const setHuntingMinutes = usePlannerStore((s) => s.setHuntingMinutes);
+  const setMesoGainPercent = usePlannerStore((s) => s.setMesoGainPercent);
+  const toggleElixirOfWealth = usePlannerStore((s) => s.toggleElixirOfWealth);
+  const toggleUnionWealth = usePlannerStore((s) => s.toggleUnionWealth);
   const setSolErdaPrice = usePlannerStore((s) => s.setSolErdaPrice);
   const setSolErdaCount = usePlannerStore((s) => s.setSolErdaCount);
+  const confirmDailyHuntingIncome = usePlannerStore((s) => s.confirmDailyHuntingIncome);
 
-  const mesoPerMinute = getMesoPerMinuteFromKills(state.huntingKillCount);
+  const mesoPerMinute = getMesoPerMinuteFromKills(state);
   const solErdaIncome = getSolErdaIncome(state);
   const dailyHuntingIncome = getDailyHuntingIncome(state);
+  const averageLoggedIncome = getAverageLoggedHuntingIncome(state.huntingLog);
 
   return (
     <Screen>
@@ -68,14 +93,35 @@ export function IncomeScreen() {
             </Pressable>
           ))}
         </View>
+
+        <NumberField
+          label="메소 획득량 (%)"
+          value={state.mesoGainPercent}
+          onChangeValue={setMesoGainPercent}
+          placeholder="예: 40"
+          unit="count"
+          countLabel="%"
+        />
+
+        <CheckboxRow
+          label="재물 획득의 비약 적용 (×1.2, 마지막에 곱연산)"
+          checked={state.useElixirOfWealth}
+          onToggle={toggleElixirOfWealth}
+        />
+        <CheckboxRow
+          label="유니온의 부 적용 (메소 획득량 +50%p)"
+          checked={state.useUnionWealth}
+          onToggle={toggleUnionWealth}
+        />
+
         <Text style={styles.rateText}>
-          분당 약 {formatMeso(mesoPerMinute)} (마리당 평균 메소 실측치 기준)
+          분당 약 {formatMeso(mesoPerMinute)}
         </Text>
 
         <NumberField
-          label="하루 평균 사냥 시간(분)"
-          value={state.huntingMinutesPerDay}
-          onChangeValue={setHuntingMinutesPerDay}
+          label="사냥 시간(분)"
+          value={state.huntingMinutes}
+          onChangeValue={setHuntingMinutes}
           placeholder="예: 240"
           unit="count"
           countLabel="분"
@@ -104,8 +150,24 @@ export function IncomeScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardLabel}>하루 사냥 수입 합계</Text>
+        <Text style={styles.cardLabel}>오늘 사냥 수입</Text>
         <Text style={styles.totalValue}>{formatMeso(dailyHuntingIncome)}</Text>
+        <Pressable
+          style={styles.confirmButton}
+          onPress={() => confirmDailyHuntingIncome(dailyHuntingIncome)}
+        >
+          <Text style={styles.confirmButtonText}>확인 (가계부에 기록)</Text>
+        </Pressable>
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={styles.cardLabel}>평균 수입 합계</Text>
+        <Text style={styles.totalValue}>{formatMeso(averageLoggedIncome)}</Text>
+        <Text style={styles.hint}>
+          {state.huntingLog.length > 0
+            ? `가계부에 ${state.huntingLog.length}일 기록됨`
+            : "아직 가계부 기록이 없어요. '확인'을 눌러 오늘 수입을 기록해보세요."}
+        </Text>
       </Card>
 
       <Text style={styles.hint}>
@@ -141,7 +203,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   chip: {
     paddingHorizontal: 14,
@@ -163,6 +225,35 @@ const styles = StyleSheet.create({
   chipTextSelected: {
     color: colors.background,
   },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  checkmark: {
+    color: colors.background,
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  checkboxLabel: {
+    color: colors.text,
+    fontSize: 14,
+    flex: 1,
+  },
   rateText: {
     color: colors.primary,
     fontSize: 13,
@@ -172,6 +263,18 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontSize: 22,
     fontWeight: "700",
+    marginBottom: 12,
+  },
+  confirmButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: colors.background,
+    fontWeight: "700",
+    fontSize: 15,
   },
   hint: {
     color: colors.textMuted,

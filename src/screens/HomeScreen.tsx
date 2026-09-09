@@ -5,11 +5,11 @@ import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
-import { calculateGoalEta, formatMeso, getDailyHuntingIncome } from "@/utils/meso";
+import { calculateGoalEta, formatMeso, getEffectiveDailyHuntingIncome } from "@/utils/meso";
 
 export function HomeScreen() {
   const state = usePlannerStore();
-  const dailyHuntingIncome = getDailyHuntingIncome(state);
+  const dailyHuntingIncome = getEffectiveDailyHuntingIncome(state);
   const eta = state.goal ? calculateGoalEta(state, state.goal.price) : null;
 
   return (
