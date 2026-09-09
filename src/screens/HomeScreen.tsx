@@ -1,24 +1,19 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
+import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
-import {
-  calculateGoalEta,
-  formatMeso,
-  getDailyIncomeRate,
-  getWeeklyBossIncome,
-} from "@/utils/meso";
+import { calculateGoalEta, formatMeso, getDailyHuntingIncome } from "@/utils/meso";
 
 export function HomeScreen() {
   const state = usePlannerStore();
-  const dailyIncomeRate = getDailyIncomeRate(state);
-  const weeklyBossIncome = getWeeklyBossIncome(state.bossEntries);
+  const dailyHuntingIncome = getDailyHuntingIncome(state);
   const eta = state.goal ? calculateGoalEta(state, state.goal.price) : null;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <Screen>
       <Text style={styles.title}>메소 플래너</Text>
 
       <Card style={styles.card}>
@@ -28,13 +23,15 @@ export function HomeScreen() {
 
       <Card style={styles.card}>
         <Text style={styles.cardLabel}>예상 하루 평균 수입</Text>
-        <Text style={styles.incomeValue}>{formatMeso(dailyIncomeRate)}</Text>
+        <Text style={styles.incomeValue}>
+          {formatMeso(dailyHuntingIncome + state.weeklyBossIncome / 7)}
+        </Text>
         <View style={styles.breakdownRow}>
           <Text style={styles.breakdownText}>
-            사냥 {formatMeso(state.dailyFarmingIncome)}/일
+            사냥 {formatMeso(dailyHuntingIncome)}/일
           </Text>
           <Text style={styles.breakdownText}>
-            보스 {formatMeso(weeklyBossIncome)}/주
+            보스 {formatMeso(state.weeklyBossIncome)}/주
           </Text>
         </View>
       </Card>
@@ -66,23 +63,16 @@ export function HomeScreen() {
           </>
         )}
       </Card>
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
   title: {
     color: colors.text,
     fontSize: 26,
     fontWeight: "700",
+    marginTop: 8,
     marginBottom: 20,
   },
   card: {

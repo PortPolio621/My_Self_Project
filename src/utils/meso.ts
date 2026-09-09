@@ -1,4 +1,4 @@
-import { BossEntry, PlannerState } from "@/types";
+import { PlannerState } from "@/types";
 
 const EOK = 100_000_000; // 억
 const MAN = 10_000; // 만
@@ -20,22 +20,67 @@ export function formatMeso(amount: number): string {
   return `${sign}${parts.join(" ")} 메소`;
 }
 
-/** 등록된 보스 항목의 주간 메소 합계 (체크 여부와 무관한 고정 수입원 기준) */
-export function getWeeklyBossIncome(bossEntries: BossEntry[]): number {
-  return bossEntries.reduce((sum, entry) => sum + entry.meso, 0);
+/** 선택 가능한 사냥 마릿수(1젠당 처치 마릿수) 범위 */
+export const HUNTING_KILL_COUNT_MIN = 34;
+export const HUNTING_KILL_COUNT_MAX = 40;
+
+/** 마릿수 1당 시간당 처치량 배수 (1젠 마릿수 × 시간당 젠 횟수 480회 = 시간당 마릿수) */
+const HOURLY_KILLS_PER_UNIT = 480;
+
+/**
+ * 마리당 평균 메소(실측치).
+ * 사용자가 제공한 사냥 기록 시트의 총 획득 메소 ÷ 총 처치 마릿수 기준으로 산출:
+ * 8,963,436,344.4 메소 ÷ 1,223,360마리 ≈ 7,327 메소/마리
+ * 캐릭터가 성장하거나 사냥터가 바뀌면 이 기준값도 달라지므로 주기적으로 재보정이 필요하다.
+ */
+const MESO_PER_KILL = 7_327;
+
+/** 사냥 마릿수(1젠 기준) → 시간당 마릿수 */
+export function getHourlyKillCount(huntingKillCount: number): number {
+  return huntingKillCount * HOURLY_KILLS_PER_UNIT;
 }
 
-/** 이번 주에 실제로 처치 완료(cleared)한 보스의 메소 합계 */
-export function getClearedBossIncome(bossEntries: BossEntry[]): number {
-  return bossEntries
-    .filter((entry) => entry.cleared)
-    .reduce((sum, entry) => sum + entry.meso, 0);
+/** 사냥 마릿수(1젠 기준) → 분당 마릿수 */
+export function getPerMinuteKillCount(huntingKillCount: number): number {
+  return getHourlyKillCount(huntingKillCount) / 60;
+}
+
+/** 분당 마릿수 × 마리당 평균 메소 = 분당 평균 메소 */
+export function getMesoPerMinuteFromKills(huntingKillCount: number): number {
+  return getPerMinuteKillCount(huntingKillCount) * MESO_PER_KILL;
+}
+
+/** 솔 에르다 조각 판매 수익 (개당 가격 × 판매 개수) */
+export function getSolErdaIncome(
+  state: Pick<PlannerState, "solErdaPrice" | "solErdaCount">
+): number {
+  return state.solErdaPrice * state.solErdaCount;
+}
+
+/** 사냥 마릿수 기반 수입 + 솔 에르다 조각 수익을 합산한 하루 사냥 수입 */
+export function getDailyHuntingIncome(
+  state: Pick<
+    PlannerState,
+    "huntingKillCount" | "huntingMinutesPerDay" | "solErdaPrice" | "solErdaCount"
+  >
+): number {
+  const mesoFromKills =
+    getMesoPerMinuteFromKills(state.huntingKillCount) * state.huntingMinutesPerDay;
+  return mesoFromKills + getSolErdaIncome(state);
 }
 
 /** 사냥 수입 + 주간 보스 수입을 합산한 하루 평균 메소 수입 */
-export function getDailyIncomeRate(state: Pick<PlannerState, "dailyFarmingIncome" | "bossEntries">): number {
-  const weeklyBoss = getWeeklyBossIncome(state.bossEntries);
-  return state.dailyFarmingIncome + weeklyBoss / 7;
+export function getDailyIncomeRate(
+  state: Pick<
+    PlannerState,
+    | "huntingKillCount"
+    | "huntingMinutesPerDay"
+    | "solErdaPrice"
+    | "solErdaCount"
+    | "weeklyBossIncome"
+  >
+): number {
+  return getDailyHuntingIncome(state) + state.weeklyBossIncome / 7;
 }
 
 export interface GoalEta {
@@ -49,7 +94,15 @@ export interface GoalEta {
 
 /** 목표 아이템 가격과 현재 상태로 목표 달성까지 걸리는 기간을 계산 */
 export function calculateGoalEta(
-  state: Pick<PlannerState, "currentMeso" | "dailyFarmingIncome" | "bossEntries">,
+  state: Pick<
+    PlannerState,
+    | "currentMeso"
+    | "huntingKillCount"
+    | "huntingMinutesPerDay"
+    | "solErdaPrice"
+    | "solErdaCount"
+    | "weeklyBossIncome"
+  >,
   goalPrice: number
 ): GoalEta {
   const remainingMeso = Math.max(goalPrice - state.currentMeso, 0);
