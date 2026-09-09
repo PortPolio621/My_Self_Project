@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "메소 플래너",
+    "slug": "meso-planner",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mesoplanner.app"
+    },
+    "android": {
+      "package": "com.mesoplanner.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
