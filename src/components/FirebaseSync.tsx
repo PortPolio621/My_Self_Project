@@ -52,16 +52,22 @@ export function FirebaseSync() {
     let cancelled = false;
 
     (async () => {
-      const ref = doc(db, "planners", user.uid);
-      const snapshot = await getDoc(ref);
-      if (cancelled) return;
+      try {
+        const ref = doc(db, "planners", user.uid);
+        const snapshot = await getDoc(ref);
+        if (cancelled) return;
 
-      if (snapshot.exists()) {
-        usePlannerStore.setState(snapshot.data() as Partial<SyncedData>);
-      } else {
-        await setDoc(ref, extractSyncedData(usePlannerStore.getState()));
+        if (snapshot.exists()) {
+          usePlannerStore.setState(snapshot.data() as Partial<SyncedData>);
+        } else {
+          await setDoc(ref, extractSyncedData(usePlannerStore.getState()));
+        }
+        loadedForUid.current = user.uid;
+      } catch (error) {
+        // Firestore 권한/네트워크 문제로 실패해도 앱은 로컬 데이터로 계속 동작한다.
+        // loadedForUid를 갱신하지 않으므로 다음 인증 상태 변화 때 다시 시도된다.
+        console.warn("FirebaseSync: failed to load cloud data", error);
       }
-      loadedForUid.current = user.uid;
     })();
 
     return () => {
@@ -77,8 +83,9 @@ export function FirebaseSync() {
 
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        setDoc(doc(db, "planners", user.uid), extractSyncedData(state)).catch(() => {
-          // 오프라인 등으로 저장 실패 시 다음 상태 변경에서 다시 시도된다
+        setDoc(doc(db, "planners", user.uid), extractSyncedData(state)).catch((error) => {
+          // 오프라인/권한 문제 등으로 저장 실패 시 다음 상태 변경에서 다시 시도된다
+          console.warn("FirebaseSync: failed to save cloud data", error);
         });
       }, 800);
     });
