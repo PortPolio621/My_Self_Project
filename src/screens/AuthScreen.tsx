@@ -1,5 +1,7 @@
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import React, { useState } from "react";
@@ -29,6 +31,10 @@ function getErrorMessage(code: string): string {
     case "auth/wrong-password":
     case "auth/user-not-found":
       return "이메일 또는 비밀번호가 올바르지 않아요.";
+    case "auth/missing-email":
+      return "이메일을 입력해주세요.";
+    case "auth/too-many-requests":
+      return "요청이 너무 많아요. 잠시 후 다시 시도해주세요.";
     default:
       return "문제가 발생했어요. 잠시 후 다시 시도해주세요.";
   }
@@ -40,6 +46,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password) {
@@ -48,12 +55,37 @@ export function AuthScreen() {
     }
     setLoading(true);
     setError(null);
+    setInfo(null);
     try {
       if (mode === "login") {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       } else {
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const credential = await createUserWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password
+        );
+        await sendEmailVerification(credential.user);
       }
+    } catch (e) {
+      const code = (e as { code?: string }).code ?? "";
+      setError(getErrorMessage(code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("비밀번호를 재설정할 이메일을 먼저 입력해주세요.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setInfo("비밀번호 재설정 링크를 이메일로 보냈어요.");
     } catch (e) {
       const code = (e as { code?: string }).code ?? "";
       setError(getErrorMessage(code));
@@ -95,6 +127,7 @@ export function AuthScreen() {
           />
 
           {error && <Text style={styles.error}>{error}</Text>}
+          {info && <Text style={styles.info}>{info}</Text>}
 
           <Pressable
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
@@ -110,11 +143,22 @@ export function AuthScreen() {
             )}
           </Pressable>
 
+          {mode === "login" && (
+            <Pressable
+              style={styles.switchModeButton}
+              onPress={handleForgotPassword}
+              disabled={loading}
+            >
+              <Text style={styles.switchModeText}>비밀번호를 잊으셨나요?</Text>
+            </Pressable>
+          )}
+
           <Pressable
             style={styles.switchModeButton}
             onPress={() => {
               setMode(mode === "login" ? "signup" : "login");
               setError(null);
+              setInfo(null);
             }}
           >
             <Text style={styles.switchModeText}>
@@ -171,6 +215,11 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.danger,
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  info: {
+    color: colors.success,
     fontSize: 13,
     marginBottom: 12,
   },

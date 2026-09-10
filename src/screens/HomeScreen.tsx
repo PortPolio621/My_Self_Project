@@ -1,5 +1,5 @@
-import { signOut } from "firebase/auth";
-import React from "react";
+import { sendEmailVerification, signOut } from "firebase/auth";
+import React, { useState } from "react";
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
@@ -13,9 +13,30 @@ import { calculateGoalEta, formatMeso, getEffectiveDailyHuntingIncome } from "@/
 export function HomeScreen() {
   const state = usePlannerStore();
   const resetAll = usePlannerStore((s) => s.resetAll);
-  const userEmail = useAuthStore((s) => s.user?.email);
+  const authUser = useAuthStore((s) => s.user);
+  const refreshUser = useAuthStore((s) => s.refreshUser);
   const dailyHuntingIncome = getEffectiveDailyHuntingIncome(state);
   const eta = state.goal ? calculateGoalEta(state, state.goal.price) : null;
+
+  const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
+  const [verifyChecking, setVerifyChecking] = useState(false);
+
+  const handleResendVerification = async () => {
+    if (!auth.currentUser) return;
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setVerifyMessage("인증 메일을 다시 보냈어요.");
+    } catch {
+      setVerifyMessage("메일 전송에 실패했어요. 잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  const handleCheckVerified = async () => {
+    setVerifyChecking(true);
+    setVerifyMessage(null);
+    await refreshUser();
+    setVerifyChecking(false);
+  };
 
   const handleReset = () => {
     const message =
@@ -45,6 +66,30 @@ export function HomeScreen() {
         />
         <Text style={styles.title}>메소 플래너</Text>
       </View>
+
+      {authUser && !authUser.emailVerified && (
+        <Card style={styles.card}>
+          <Text style={styles.cardLabel}>이메일 인증이 필요해요</Text>
+          <Text style={styles.emptyText}>
+            {authUser.email}로 인증 메일을 보냈어요. 메일함에서 링크를 눌러주세요.
+          </Text>
+          {verifyMessage && <Text style={styles.verifyMessage}>{verifyMessage}</Text>}
+          <View style={styles.verifyButtonRow}>
+            <Pressable style={styles.verifySecondaryButton} onPress={handleResendVerification}>
+              <Text style={styles.verifySecondaryButtonText}>메일 재전송</Text>
+            </Pressable>
+            <Pressable
+              style={styles.verifyPrimaryButton}
+              onPress={handleCheckVerified}
+              disabled={verifyChecking}
+            >
+              <Text style={styles.verifyPrimaryButtonText}>
+                {verifyChecking ? "확인 중..." : "인증 확인"}
+              </Text>
+            </Pressable>
+          </View>
+        </Card>
+      )}
 
       <Card style={styles.card}>
         <Text style={styles.cardLabel}>현재 보유 메소</Text>
@@ -94,7 +139,9 @@ export function HomeScreen() {
         )}
       </Card>
 
-      {userEmail && <Text style={styles.accountText}>{userEmail}로 로그인됨</Text>}
+      {authUser?.email && (
+        <Text style={styles.accountText}>{authUser.email}로 로그인됨</Text>
+      )}
 
       <Pressable style={styles.resetButton} onPress={() => signOut(auth)}>
         <Text style={styles.logoutButtonText}>로그아웃</Text>
@@ -186,6 +233,40 @@ const styles = StyleSheet.create({
   },
   warning: {
     color: colors.danger,
+    fontSize: 13,
+  },
+  verifyMessage: {
+    color: colors.primary,
+    fontSize: 12,
+    marginTop: 8,
+  },
+  verifyButtonRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  verifySecondaryButton: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  verifySecondaryButtonText: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  verifyPrimaryButton: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+  },
+  verifyPrimaryButtonText: {
+    color: colors.background,
+    fontWeight: "700",
     fontSize: 13,
   },
   accountText: {
