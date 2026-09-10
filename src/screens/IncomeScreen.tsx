@@ -12,6 +12,7 @@ import {
   formatMeso,
   getAverageLoggedHuntingIncome,
   getDailyHuntingIncome,
+  getLocalDateKey,
   getMesoPerMinuteFromKills,
   getSolErdaIncome,
 } from "@/utils/meso";
@@ -56,6 +57,9 @@ export function IncomeScreen() {
   const solErdaIncome = getSolErdaIncome(state);
   const dailyHuntingIncome = getDailyHuntingIncome(state);
   const averageLoggedIncome = getAverageLoggedHuntingIncome(state.huntingLog);
+
+  const todayKey = getLocalDateKey();
+  const todayEntry = state.huntingLog.find((entry) => entry.date === todayKey);
 
   return (
     <Screen>
@@ -102,6 +106,7 @@ export function IncomeScreen() {
           unit="count"
           countLabel="%"
         />
+        <Text style={styles.fieldNote}>도핑하지 않은 상태의 능력치를 적으셔야 합니다.</Text>
 
         <CheckboxRow
           label="재물 획득의 비약 적용 (×1.2, 마지막에 곱연산)"
@@ -150,7 +155,7 @@ export function IncomeScreen() {
       </Card>
 
       <Card style={styles.card}>
-        <Text style={styles.cardLabel}>오늘 사냥 수입</Text>
+        <Text style={styles.cardLabel}>이번 회차 사냥 수입</Text>
         <Text style={styles.totalValue}>{formatMeso(dailyHuntingIncome)}</Text>
         <Pressable
           style={styles.confirmButton}
@@ -158,6 +163,11 @@ export function IncomeScreen() {
         >
           <Text style={styles.confirmButtonText}>확인 (가계부에 기록)</Text>
         </Pressable>
+        {todayEntry && (
+          <Text style={styles.hint}>
+            오늘 누적 기록: {formatMeso(todayEntry.totalMeso)}
+          </Text>
+        )}
       </Card>
 
       <Card style={styles.card}>
@@ -168,6 +178,7 @@ export function IncomeScreen() {
             ? `가계부에 ${state.huntingLog.length}일 기록됨`
             : "아직 가계부 기록이 없어요. '확인'을 눌러 오늘 수입을 기록해보세요."}
         </Text>
+        <Text style={styles.hint}>기록 횟수: {state.huntingConfirmCount}회</Text>
       </Card>
 
       <Text style={styles.hint}>
@@ -257,6 +268,12 @@ const styles = StyleSheet.create({
   rateText: {
     color: colors.primary,
     fontSize: 13,
+    marginBottom: 12,
+  },
+  fieldNote: {
+    color: colors.textMuted,
+    fontSize: 11,
+    marginTop: -8,
     marginBottom: 12,
   },
   totalValue: {

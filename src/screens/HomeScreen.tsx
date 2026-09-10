@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
@@ -14,7 +14,14 @@ export function HomeScreen() {
 
   return (
     <Screen>
-      <Text style={styles.title}>메소 플래너</Text>
+      <View style={styles.header}>
+        <Image
+          source={require("../../assets/images/logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>메소 플래너</Text>
+      </View>
 
       <Card style={styles.card}>
         <Text style={styles.cardLabel}>현재 보유 메소</Text>
@@ -67,13 +74,24 @@ export function HomeScreen() {
   );
 }
 
+const LOGO_ASPECT_RATIO = 265 / 257;
+
 const styles = StyleSheet.create({
+  header: {
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  logo: {
+    width: 190,
+    height: 190 / LOGO_ASPECT_RATIO,
+    marginBottom: 8,
+  },
   title: {
     color: colors.text,
     fontSize: 26,
     fontWeight: "700",
-    marginTop: 8,
-    marginBottom: 20,
+    textAlign: "center",
   },
   card: {
     marginBottom: 16,
