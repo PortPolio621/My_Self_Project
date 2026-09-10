@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   breakdownRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
+    gap: 4,
   },
   breakdownText: {
     color: colors.textMuted,
