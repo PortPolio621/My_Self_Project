@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
@@ -9,8 +9,27 @@ import { calculateGoalEta, formatMeso, getEffectiveDailyHuntingIncome } from "@/
 
 export function HomeScreen() {
   const state = usePlannerStore();
+  const resetAll = usePlannerStore((s) => s.resetAll);
   const dailyHuntingIncome = getEffectiveDailyHuntingIncome(state);
   const eta = state.goal ? calculateGoalEta(state, state.goal.price) : null;
+
+  const handleReset = () => {
+    const message =
+      "보유 메소, 사냥 설정, 가계부 기록, 목표를 모두 지우고 처음 상태로 되돌려요. 되돌릴 수 없어요.";
+
+    // react-native-web의 Alert.alert은 아무 UI도 띄우지 않는 스텁이라 웹에서는 별도 처리
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm(message)) {
+        resetAll();
+      }
+      return;
+    }
+
+    Alert.alert("전체 데이터 초기화", message, [
+      { text: "취소", style: "cancel" },
+      { text: "초기화", style: "destructive", onPress: resetAll },
+    ]);
+  };
 
   return (
     <Screen>
@@ -70,6 +89,10 @@ export function HomeScreen() {
           </>
         )}
       </Card>
+
+      <Pressable style={styles.resetButton} onPress={handleReset}>
+        <Text style={styles.resetButtonText}>전체 데이터 초기화</Text>
+      </Pressable>
     </Screen>
   );
 }
@@ -154,5 +177,15 @@ const styles = StyleSheet.create({
   warning: {
     color: colors.danger,
     fontSize: 13,
+  },
+  resetButton: {
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  resetButtonText: {
+    color: colors.danger,
+    fontSize: 13,
+    textDecorationLine: "underline",
   },
 });
