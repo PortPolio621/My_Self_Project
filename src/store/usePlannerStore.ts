@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-import { HUNTING_KILL_COUNT_MIN } from "@/utils/meso";
+import { HUNTING_KILL_COUNT_MIN, getLocalDateKey } from "@/utils/meso";
 import { Goal, PlannerState } from "@/types";
 
 interface PlannerActions {
@@ -30,6 +30,7 @@ const initialState: PlannerState = {
   solErdaCount: 0,
   weeklyBossIncome: 0,
   huntingLog: [],
+  huntingConfirmCount: 0,
   goal: null,
 };
 
@@ -61,16 +62,33 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
         set({ weeklyBossIncome: Math.max(amount, 0) }),
 
       confirmDailyHuntingIncome: (totalMeso) =>
-        set((state) => ({
-          huntingLog: [
-            ...state.huntingLog,
-            {
-              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              recordedAt: new Date().toISOString(),
-              totalMeso,
-            },
-          ],
-        })),
+        set((state) => {
+          const todayKey = getLocalDateKey();
+          const existingIndex = state.huntingLog.findIndex(
+            (entry) => entry.date === todayKey
+          );
+
+          const huntingLog =
+            existingIndex >= 0
+              ? state.huntingLog.map((entry, i) =>
+                  i === existingIndex
+                    ? { ...entry, totalMeso: entry.totalMeso + totalMeso }
+                    : entry
+                )
+              : [
+                  ...state.huntingLog,
+                  {
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    date: todayKey,
+                    totalMeso,
+                  },
+                ];
+
+          return {
+            huntingLog,
+            huntingConfirmCount: state.huntingConfirmCount + 1,
+          };
+        }),
 
       setGoal: (goal) => set({ goal }),
     }),

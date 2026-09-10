@@ -20,6 +20,14 @@ export function formatMeso(amount: number): string {
   return `${sign}${parts.join(" ")} 메소`;
 }
 
+/** 기기 로컬 기준 오늘 날짜를 "YYYY-MM-DD"로 반환 (가계부 날짜 경계는 자정 기준) */
+export function getLocalDateKey(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 /** 선택 가능한 사냥 마릿수(1젠당 처치 마릿수) 범위 */
 export const HUNTING_KILL_COUNT_MIN = 34;
 export const HUNTING_KILL_COUNT_MAX = 40;
