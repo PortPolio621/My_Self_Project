@@ -17,6 +17,7 @@ interface PlannerActions {
   setWeeklyBossIncome: (amount: number) => void;
   confirmDailyHuntingIncome: (totalMeso: number) => void;
   setGoal: (goal: Goal | null) => void;
+  resetAll: () => void;
 }
 
 const initialState: PlannerState = {
@@ -91,6 +92,8 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
         }),
 
       setGoal: (goal) => set({ goal }),
+
+      resetAll: () => set(initialState),
     }),
     {
       name: "meso-planner-storage",
