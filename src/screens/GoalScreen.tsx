@@ -30,7 +30,7 @@ export function GoalScreen() {
 
   return (
     <Screen>
-      <Text style={styles.title}>목표 설정</Text>
+      <Text style={styles.title}>스펙업 목표</Text>
 
       <Card style={styles.card}>
         <Text style={styles.label}>목표 아이템 이름</Text>
