@@ -7,11 +7,13 @@ import {
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -96,79 +98,88 @@ export function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.content}>
-        <Text style={styles.title}>메소 플래너</Text>
-        <Text style={styles.subtitle}>
-          계정으로 로그인하면 웹/모바일 어디서든 같은 데이터를 볼 수 있어요.
-        </Text>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoider}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>메소 플래너</Text>
+          <Text style={styles.subtitle}>
+            계정으로 로그인하면 웹/모바일 어디서든 같은 데이터를 볼 수 있어요.
+          </Text>
 
-        <Card style={styles.card}>
-          <Text style={styles.label}>이메일</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-          />
+          <Card style={styles.card}>
+            <Text style={styles.label}>이메일</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+            />
 
-          <Text style={styles.label}>비밀번호</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="6자 이상"
-            placeholderTextColor={colors.textMuted}
-            secureTextEntry
-            autoCapitalize="none"
-          />
+            <Text style={styles.label}>비밀번호</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="6자 이상"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              autoCapitalize="none"
+            />
 
-          {error && <Text style={styles.error}>{error}</Text>}
-          {info && <Text style={styles.info}>{info}</Text>}
+            {error && <Text style={styles.error}>{error}</Text>}
+            {info && <Text style={styles.info}>{info}</Text>}
 
-          <Pressable
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.background} />
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {mode === "login" ? "로그인" : "회원가입"}
-              </Text>
-            )}
-          </Pressable>
-
-          {mode === "login" && (
             <Pressable
-              style={styles.switchModeButton}
-              onPress={handleForgotPassword}
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
               disabled={loading}
             >
-              <Text style={styles.switchModeText}>비밀번호를 잊으셨나요?</Text>
+              {loading ? (
+                <ActivityIndicator color={colors.background} />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {mode === "login" ? "로그인" : "회원가입"}
+                </Text>
+              )}
             </Pressable>
-          )}
 
-          <Pressable
-            style={styles.switchModeButton}
-            onPress={() => {
-              setMode(mode === "login" ? "signup" : "login");
-              setError(null);
-              setInfo(null);
-            }}
-          >
-            <Text style={styles.switchModeText}>
-              {mode === "login"
-                ? "계정이 없으신가요? 회원가입"
-                : "이미 계정이 있으신가요? 로그인"}
-            </Text>
-          </Pressable>
-        </Card>
-      </View>
+            {mode === "login" && (
+              <Pressable
+                style={styles.switchModeButton}
+                onPress={handleForgotPassword}
+                disabled={loading}
+              >
+                <Text style={styles.switchModeText}>비밀번호를 잊으셨나요?</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              style={styles.switchModeButton}
+              onPress={() => {
+                setMode(mode === "login" ? "signup" : "login");
+                setError(null);
+                setInfo(null);
+              }}
+            >
+              <Text style={styles.switchModeText}>
+                {mode === "login"
+                  ? "계정이 없으신가요? 회원가입"
+                  : "이미 계정이 있으신가요? 로그인"}
+              </Text>
+            </Pressable>
+          </Card>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -178,8 +189,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  keyboardAvoider: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     justifyContent: "center",
     padding: 24,
   },
