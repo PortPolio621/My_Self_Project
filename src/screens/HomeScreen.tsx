@@ -1,8 +1,11 @@
+import { signOut } from "firebase/auth";
 import React from "react";
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
+import { auth } from "@/services/firebase";
+import { useAuthStore } from "@/store/useAuthStore";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
 import { calculateGoalEta, formatMeso, getEffectiveDailyHuntingIncome } from "@/utils/meso";
@@ -10,6 +13,7 @@ import { calculateGoalEta, formatMeso, getEffectiveDailyHuntingIncome } from "@/
 export function HomeScreen() {
   const state = usePlannerStore();
   const resetAll = usePlannerStore((s) => s.resetAll);
+  const userEmail = useAuthStore((s) => s.user?.email);
   const dailyHuntingIncome = getEffectiveDailyHuntingIncome(state);
   const eta = state.goal ? calculateGoalEta(state, state.goal.price) : null;
 
@@ -89,6 +93,12 @@ export function HomeScreen() {
           </>
         )}
       </Card>
+
+      {userEmail && <Text style={styles.accountText}>{userEmail}로 로그인됨</Text>}
+
+      <Pressable style={styles.resetButton} onPress={() => signOut(auth)}>
+        <Text style={styles.logoutButtonText}>로그아웃</Text>
+      </Pressable>
 
       <Pressable style={styles.resetButton} onPress={handleReset}>
         <Text style={styles.resetButtonText}>전체 데이터 초기화</Text>
@@ -178,10 +188,21 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 13,
   },
+  accountText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 16,
+  },
   resetButton: {
     alignItems: "center",
     paddingVertical: 12,
     marginTop: 8,
+  },
+  logoutButtonText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    textDecorationLine: "underline",
   },
   resetButtonText: {
     color: colors.danger,
