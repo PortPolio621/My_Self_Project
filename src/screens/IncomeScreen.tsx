@@ -222,13 +222,13 @@ export function IncomeScreen() {
         </Text>
         <Text style={styles.hint}>기록 횟수: {state.huntingConfirmCount}회</Text>
         {isLogLimited ? (
-          <Text style={styles.fieldNote}>
+          <Text style={styles.sectionNote}>
             무료 플랜은 평균 계산에 최근 {FREE_TIER_LOG_WINDOW_DAYS}일치 기록만 반영돼요. 이전
             기록은 계속 보관되며, 프로로 전환하면 전체 기간이 바로 반영돼요.
           </Text>
         ) : (
           !state.isPro && (
-            <Text style={styles.fieldNote}>
+            <Text style={styles.sectionNote}>
               무료 플랜은 최근 {FREE_TIER_LOG_WINDOW_DAYS}일치 기록까지 평균에 반영돼요.
             </Text>
           )
@@ -237,7 +237,7 @@ export function IncomeScreen() {
         {state.isPro ? (
           <>
             {Platform.OS === "android" && (
-              <Text style={styles.fieldNote}>
+              <Text style={styles.sectionNote}>
                 처음 한 번만 저장할 폴더를 선택하면, 다음부터는 바로 저장돼요.
               </Text>
             )}
@@ -256,7 +256,7 @@ export function IncomeScreen() {
             )}
           </>
         ) : (
-          <Text style={styles.fieldNote}>엑셀 다운로드는 프로 전용 기능이에요.</Text>
+          <Text style={styles.sectionNote}>엑셀 다운로드는 프로 전용 기능이에요.</Text>
         )}
       </Card>
 
@@ -353,6 +353,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 11,
     marginTop: -8,
+    marginBottom: 12,
+  },
+  sectionNote: {
+    color: colors.textMuted,
+    fontSize: 11,
+    marginTop: 4,
     marginBottom: 12,
   },
   totalValue: {
