@@ -13,6 +13,7 @@ import { calculateGoalEta, formatMeso, getEffectiveDailyHuntingIncome } from "@/
 export function HomeScreen() {
   const state = usePlannerStore();
   const resetAll = usePlannerStore((s) => s.resetAll);
+  const setIsPro = usePlannerStore((s) => s.setIsPro);
   const authUser = useAuthStore((s) => s.user);
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const dailyHuntingIncome = getEffectiveDailyHuntingIncome(state);
@@ -139,6 +140,25 @@ export function HomeScreen() {
         )}
       </Card>
 
+      <Card style={styles.card}>
+        <Text style={styles.cardLabel}>플랜</Text>
+        <Text style={styles.planValue}>
+          {state.isPro ? "메소 플래너 + 프로" : "무료"}
+        </Text>
+        <Text style={styles.fieldNote}>
+          아직 실제 결제는 연동되지 않았어요. 아래 버튼은 개발 중 기능 확인용 임시
+          스위치예요.
+        </Text>
+        <Pressable
+          style={styles.proToggleButton}
+          onPress={() => setIsPro(!state.isPro)}
+        >
+          <Text style={styles.proToggleButtonText}>
+            {state.isPro ? "프로 해제 (테스트용)" : "프로로 전환 (테스트용)"}
+          </Text>
+        </Pressable>
+      </Card>
+
       {authUser?.email && (
         <Text style={styles.accountText}>{authUser.email}로 로그인됨</Text>
       )}
@@ -234,6 +254,29 @@ const styles = StyleSheet.create({
   warning: {
     color: colors.danger,
     fontSize: 13,
+  },
+  planValue: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  fieldNote: {
+    color: colors.textMuted,
+    fontSize: 11,
+    marginBottom: 12,
+  },
+  proToggleButton: {
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  proToggleButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
   },
   verifyMessage: {
     color: colors.primary,
