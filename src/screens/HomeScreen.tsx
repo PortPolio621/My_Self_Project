@@ -8,7 +8,12 @@ import { auth } from "@/services/firebase";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
-import { calculateGoalEta, formatMeso, getEffectiveDailyHuntingIncome } from "@/utils/meso";
+import {
+  calculateGoalEta,
+  formatMeso,
+  getEffectiveDailyHuntingIncome,
+  getTotalLoggedMeso,
+} from "@/utils/meso";
 
 export function HomeScreen() {
   const state = usePlannerStore();
@@ -18,6 +23,7 @@ export function HomeScreen() {
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const dailyHuntingIncome = getEffectiveDailyHuntingIncome(state);
   const eta = state.goal ? calculateGoalEta(state, state.goal.price) : null;
+  const totalLoggedMeso = getTotalLoggedMeso(state.huntingLog);
 
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
   const [verifyChecking, setVerifyChecking] = useState(false);
@@ -159,6 +165,21 @@ export function HomeScreen() {
         </Pressable>
       </Card>
 
+      {state.isPro && (
+        <Card style={styles.card}>
+          <Text style={styles.cardLabel}>프로 통계 (누적)</Text>
+          <Text style={styles.statLabel}>가계부 누적 총 수입</Text>
+          <Text style={styles.mesoValue}>{formatMeso(totalLoggedMeso)}</Text>
+          <Text style={[styles.statLabel, styles.statLabelSpaced]}>
+            판매한 솔 에르다 조각
+          </Text>
+          <Text style={styles.statValue}>
+            {state.totalSolErdaSoldCount.toLocaleString("ko-KR")}개 (순수익{" "}
+            {formatMeso(state.totalSolErdaSoldIncome)})
+          </Text>
+        </Card>
+      )}
+
       {authUser?.email && (
         <Text style={styles.accountText}>{authUser.email}로 로그인됨</Text>
       )}
@@ -276,6 +297,19 @@ const styles = StyleSheet.create({
   proToggleButtonText: {
     color: colors.primary,
     fontSize: 13,
+    fontWeight: "600",
+  },
+  statLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  statLabelSpaced: {
+    marginTop: 12,
+  },
+  statValue: {
+    color: colors.text,
+    fontSize: 16,
     fontWeight: "600",
   },
   verifyMessage: {

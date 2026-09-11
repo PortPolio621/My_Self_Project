@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
@@ -6,7 +6,9 @@ import { NumberField } from "@/components/NumberField";
 import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
+import { exportHuntingLogToExcel } from "@/utils/exportHuntingLog";
 import {
+  FREE_TIER_LOG_WINDOW_DAYS,
   HUNTING_KILL_COUNT_MAX,
   HUNTING_KILL_COUNT_MIN,
   formatMeso,
@@ -14,6 +16,7 @@ import {
   getDailyHuntingIncome,
   getLocalDateKey,
   getMesoPerMinuteFromKills,
+  getRelevantHuntingLog,
   getSolErdaFeeRate,
   getSolErdaIncome,
 } from "@/utils/meso";
@@ -60,10 +63,30 @@ export function IncomeScreen() {
   const solErdaFeeRate = getSolErdaFeeRate(state);
   const solErdaIncome = getSolErdaIncome(state);
   const dailyHuntingIncome = getDailyHuntingIncome(state);
-  const averageLoggedIncome = getAverageLoggedHuntingIncome(state.huntingLog);
+  const relevantHuntingLog = getRelevantHuntingLog(state.huntingLog, state.isPro);
+  const averageLoggedIncome = getAverageLoggedHuntingIncome(relevantHuntingLog);
+  const isLogLimited = !state.isPro && state.huntingLog.length > relevantHuntingLog.length;
 
   const todayKey = getLocalDateKey();
   const todayEntry = state.huntingLog.find((entry) => entry.date === todayKey);
+
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportHuntingLogToExcel(state.huntingLog, {
+        totalSolErdaSoldCount: state.totalSolErdaSoldCount,
+        totalSolErdaSoldIncome: state.totalSolErdaSoldIncome,
+      });
+    } catch {
+      setExportError("내보내기에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <Screen>
@@ -173,7 +196,9 @@ export function IncomeScreen() {
         <Text style={styles.totalValue}>{formatMeso(dailyHuntingIncome)}</Text>
         <Pressable
           style={styles.confirmButton}
-          onPress={() => confirmDailyHuntingIncome(dailyHuntingIncome)}
+          onPress={() =>
+            confirmDailyHuntingIncome(dailyHuntingIncome, state.solErdaCount, solErdaIncome)
+          }
         >
           <Text style={styles.confirmButtonText}>확인 (가계부에 기록)</Text>
         </Pressable>
@@ -193,6 +218,35 @@ export function IncomeScreen() {
             : "아직 가계부 기록이 없어요. '확인'을 눌러 오늘 수입을 기록해보세요."}
         </Text>
         <Text style={styles.hint}>기록 횟수: {state.huntingConfirmCount}회</Text>
+        {isLogLimited ? (
+          <Text style={styles.fieldNote}>
+            무료 플랜은 평균 계산에 최근 {FREE_TIER_LOG_WINDOW_DAYS}일치 기록만 반영돼요. 이전
+            기록은 계속 보관되며, 프로로 전환하면 전체 기간이 바로 반영돼요.
+          </Text>
+        ) : (
+          !state.isPro && (
+            <Text style={styles.fieldNote}>
+              무료 플랜은 최근 {FREE_TIER_LOG_WINDOW_DAYS}일치 기록까지 평균에 반영돼요.
+            </Text>
+          )
+        )}
+
+        {state.isPro ? (
+          <>
+            <Pressable
+              style={styles.exportButton}
+              onPress={handleExport}
+              disabled={exporting || state.huntingLog.length === 0}
+            >
+              <Text style={styles.exportButtonText}>
+                {exporting ? "내보내는 중..." : "엑셀로 내보내기"}
+              </Text>
+            </Pressable>
+            {exportError && <Text style={styles.exportError}>{exportError}</Text>}
+          </>
+        ) : (
+          <Text style={styles.fieldNote}>엑셀 내보내기는 프로 전용 기능이에요.</Text>
+        )}
       </Card>
 
       <Text style={styles.hint}>
@@ -310,5 +364,23 @@ const styles = StyleSheet.create({
   hint: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+  exportButton: {
+    marginTop: 12,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  exportButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  exportError: {
+    color: colors.danger,
+    fontSize: 12,
+    marginTop: 8,
   },
 });

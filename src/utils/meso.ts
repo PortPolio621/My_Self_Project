@@ -126,6 +126,22 @@ export function getDailyHuntingIncome(
   return mesoFromKills + getSolErdaIncome(state);
 }
 
+/** 무료 플랜에서 평균 계산에 반영하는 가계부 기록 일수 (그 이전 기록은 보관은 되지만 평균에서 제외) */
+export const FREE_TIER_LOG_WINDOW_DAYS = 7;
+
+/**
+ * Pro 여부에 따라 평균 계산에 사용할 가계부 기록을 추려낸다.
+ * 무료 플랜은 최근 N일만 반영해야 적게/많이 사냥한 날이 섞였을 때의 평균 왜곡을 줄일 수 있다.
+ * huntingLog는 항상 날짜 순으로 append되므로 뒤에서부터 자르면 최근 기록이 된다.
+ */
+export function getRelevantHuntingLog(
+  huntingLog: HuntingLogEntry[],
+  isPro: boolean
+): HuntingLogEntry[] {
+  if (isPro) return huntingLog;
+  return huntingLog.slice(-FREE_TIER_LOG_WINDOW_DAYS);
+}
+
 /** 가계부에 기록된 사냥 수입들의 평균 (기록이 없으면 0) */
 export function getAverageLoggedHuntingIncome(huntingLog: HuntingLogEntry[]): number {
   if (huntingLog.length === 0) return 0;
@@ -135,7 +151,7 @@ export function getAverageLoggedHuntingIncome(huntingLog: HuntingLogEntry[]): nu
 
 /**
  * 실제 사용할 하루 사냥 수입.
- * 가계부에 기록이 쌓여 있으면 그 평균을, 아직 없으면 지금 입력값 기준 추정치를 사용한다.
+ * 가계부에 기록이 쌓여 있으면 그 평균을(무료 플랜은 최근 7일치만), 아직 없으면 지금 입력값 기준 추정치를 사용한다.
  */
 export function getEffectiveDailyHuntingIncome(
   state: Pick<
@@ -149,10 +165,11 @@ export function getEffectiveDailyHuntingIncome(
     | "solErdaCount"
     | "useMvpDiscount"
     | "huntingLog"
+    | "isPro"
   >
 ): number {
   if (state.huntingLog.length > 0) {
-    return getAverageLoggedHuntingIncome(state.huntingLog);
+    return getAverageLoggedHuntingIncome(getRelevantHuntingLog(state.huntingLog, state.isPro));
   }
   return getDailyHuntingIncome(state);
 }
@@ -170,6 +187,7 @@ export function getDailyIncomeRate(
     | "solErdaCount"
     | "useMvpDiscount"
     | "huntingLog"
+    | "isPro"
     | "weeklyBossIncome"
   >
 ): number {
@@ -199,6 +217,7 @@ export function calculateGoalEta(
     | "solErdaCount"
     | "useMvpDiscount"
     | "huntingLog"
+    | "isPro"
     | "weeklyBossIncome"
   >,
   goalPrice: number
@@ -216,4 +235,9 @@ export function calculateGoalEta(
 
   const days = Math.ceil(remainingMeso / dailyIncomeRate);
   return { remainingMeso, days, achieved: false };
+}
+
+/** 가계부에 보관된 전체 기록의 누적 총 수입 (Pro 통계용, 무료 플랜의 7일 제한과 무관하게 전체 합산) */
+export function getTotalLoggedMeso(huntingLog: HuntingLogEntry[]): number {
+  return huntingLog.reduce((sum, entry) => sum + entry.totalMeso, 0);
 }

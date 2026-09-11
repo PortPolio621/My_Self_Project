@@ -22,6 +22,8 @@ const SYNCED_KEYS = [
   "huntingConfirmCount",
   "goal",
   "isPro",
+  "totalSolErdaSoldCount",
+  "totalSolErdaSoldIncome",
 ] as const satisfies readonly (keyof PlannerState)[];
 
 type SyncedData = Pick<PlannerState, (typeof SYNCED_KEYS)[number]>;

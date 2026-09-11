@@ -16,7 +16,11 @@ interface PlannerActions {
   setSolErdaCount: (count: number) => void;
   toggleMvpDiscount: () => void;
   setWeeklyBossIncome: (amount: number) => void;
-  confirmDailyHuntingIncome: (totalMeso: number) => void;
+  confirmDailyHuntingIncome: (
+    totalMeso: number,
+    solErdaCount: number,
+    solErdaIncome: number
+  ) => void;
   setGoal: (goal: Goal | null) => void;
   setIsPro: (isPro: boolean) => void;
   resetAll: () => void;
@@ -37,6 +41,8 @@ const initialState: PlannerState = {
   huntingConfirmCount: 0,
   goal: null,
   isPro: false,
+  totalSolErdaSoldCount: 0,
+  totalSolErdaSoldIncome: 0,
 };
 
 export const usePlannerStore = create<PlannerState & PlannerActions>()(
@@ -69,7 +75,7 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
       setWeeklyBossIncome: (amount) =>
         set({ weeklyBossIncome: Math.max(amount, 0) }),
 
-      confirmDailyHuntingIncome: (totalMeso) =>
+      confirmDailyHuntingIncome: (totalMeso, solErdaCount, solErdaIncome) =>
         set((state) => {
           const todayKey = getLocalDateKey();
           const existingIndex = state.huntingLog.findIndex(
@@ -95,6 +101,8 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
           return {
             huntingLog,
             huntingConfirmCount: state.huntingConfirmCount + 1,
+            totalSolErdaSoldCount: state.totalSolErdaSoldCount + solErdaCount,
+            totalSolErdaSoldIncome: state.totalSolErdaSoldIncome + solErdaIncome,
           };
         }),
 
