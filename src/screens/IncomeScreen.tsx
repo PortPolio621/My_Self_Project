@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { NumberField } from "@/components/NumberField";
@@ -72,17 +72,20 @@ export function IncomeScreen() {
 
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState(false);
 
   const handleExport = async () => {
     setExporting(true);
     setExportError(null);
+    setExportSuccess(false);
     try {
       await exportHuntingLogToExcel(state.huntingLog, {
         totalSolErdaSoldCount: state.totalSolErdaSoldCount,
         totalSolErdaSoldIncome: state.totalSolErdaSoldIncome,
       });
+      setExportSuccess(true);
     } catch {
-      setExportError("내보내기에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setExportError("다운로드에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
       setExporting(false);
     }
@@ -233,19 +236,27 @@ export function IncomeScreen() {
 
         {state.isPro ? (
           <>
+            {Platform.OS === "android" && (
+              <Text style={styles.fieldNote}>
+                처음 한 번만 저장할 폴더를 선택하면, 다음부터는 바로 저장돼요.
+              </Text>
+            )}
             <Pressable
               style={styles.exportButton}
               onPress={handleExport}
               disabled={exporting || state.huntingLog.length === 0}
             >
               <Text style={styles.exportButtonText}>
-                {exporting ? "내보내는 중..." : "엑셀로 내보내기"}
+                {exporting ? "다운로드 중..." : "엑셀로 다운로드"}
               </Text>
             </Pressable>
             {exportError && <Text style={styles.exportError}>{exportError}</Text>}
+            {exportSuccess && !exportError && Platform.OS !== "ios" && (
+              <Text style={styles.exportSuccess}>다운로드 완료!</Text>
+            )}
           </>
         ) : (
-          <Text style={styles.fieldNote}>엑셀 내보내기는 프로 전용 기능이에요.</Text>
+          <Text style={styles.fieldNote}>엑셀 다운로드는 프로 전용 기능이에요.</Text>
         )}
       </Card>
 
@@ -380,6 +391,11 @@ const styles = StyleSheet.create({
   },
   exportError: {
     color: colors.danger,
+    fontSize: 12,
+    marginTop: 8,
+  },
+  exportSuccess: {
+    color: colors.success,
     fontSize: 12,
     marginTop: 8,
   },

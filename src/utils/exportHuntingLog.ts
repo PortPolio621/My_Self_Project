@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import * as XLSX from "xlsx";
 
@@ -10,10 +11,12 @@ interface HuntingLogSummary {
   totalSolErdaSoldIncome: number;
 }
 
-function buildWorkbookBytes(
-  huntingLog: HuntingLogEntry[],
-  summary: HuntingLogSummary
-): Uint8Array {
+const MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+/** Android에서 한 번 선택한 저장 폴더(SAF) 권한을 기억해두는 키. 다음 내보내기부터는 다시 묻지 않는다 */
+const ANDROID_SAF_DIRECTORY_URI_KEY = "meso-planner:export-directory-uri";
+
+function buildWorkbook(huntingLog: HuntingLogEntry[], summary: HuntingLogSummary) {
   const rows: ExcelRow[] = huntingLog.map((entry) => ({
     날짜: entry.date,
     "사냥 수입(메소)": Math.round(entry.totalMeso),
@@ -34,26 +37,61 @@ function buildWorkbookBytes(
   const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "가계부");
-
-  const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as number[];
-  return new Uint8Array(bytes);
+  return workbook;
 }
 
-/** 가계부 기록(+ 누적 솔 에르다 통계)을 .xlsx 파일로 내보낸다. 웹은 바로 다운로드, 앱은 공유 시트를 연다 */
+/**
+ * Android: SAF(Storage Access Framework)로 선택한 폴더(보통 다운로드)에 바로 파일을 써서
+ * 공유 시트 없이 "다운로드"에 가까운 경험을 준다. 폴더 권한은 최초 1회만 요청하고 기억해둔다.
+ */
+async function saveOnAndroid(baseFileName: string, base64Content: string): Promise<void> {
+  const { StorageAccessFramework } = await import("expo-file-system/legacy");
+
+  const writeIntoDirectory = (directoryUri: string) =>
+    StorageAccessFramework.createFileAsync(directoryUri, baseFileName, MIME_TYPE).then(
+      (fileUri) => StorageAccessFramework.writeAsStringAsync(fileUri, base64Content, {
+        encoding: "base64",
+      })
+    );
+
+  const savedDirectoryUri = await AsyncStorage.getItem(ANDROID_SAF_DIRECTORY_URI_KEY);
+  if (savedDirectoryUri) {
+    try {
+      await writeIntoDirectory(savedDirectoryUri);
+      return;
+    } catch {
+      // 저장해둔 폴더 권한이 취소/만료됐을 수 있으니 아래에서 다시 요청한다
+      await AsyncStorage.removeItem(ANDROID_SAF_DIRECTORY_URI_KEY);
+    }
+  }
+
+  const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+  if (!permissions.granted) {
+    throw new Error("저장할 폴더 접근 권한이 필요해요.");
+  }
+  await AsyncStorage.setItem(ANDROID_SAF_DIRECTORY_URI_KEY, permissions.directoryUri);
+  await writeIntoDirectory(permissions.directoryUri);
+}
+
+/**
+ * 가계부 기록(+ 누적 솔 에르다 통계)을 .xlsx로 내보낸다.
+ * 웹은 브라우저 다운로드, 안드로이드는 선택한 폴더에 직접 저장(최초 1회만 폴더 선택),
+ * iOS는 공유 시트를 통해 "파일에 저장"한다.
+ */
 export async function exportHuntingLogToExcel(
   huntingLog: HuntingLogEntry[],
   summary: HuntingLogSummary
 ): Promise<void> {
-  const bytes = buildWorkbookBytes(huntingLog, summary);
-  const fileName = `메소플래너_가계부_${new Date().toISOString().slice(0, 10)}.xlsx`;
-  const mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const workbook = buildWorkbook(huntingLog, summary);
+  const baseFileName = `메소플래너_가계부_${new Date().toISOString().slice(0, 10)}`;
 
   if (Platform.OS === "web") {
-    const blob = new Blob([bytes], { type: mimeType });
+    const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as number[];
+    const blob = new Blob([new Uint8Array(bytes)], { type: MIME_TYPE });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = fileName;
+    link.download = `${baseFileName}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -61,19 +99,26 @@ export async function exportHuntingLogToExcel(
     return;
   }
 
+  if (Platform.OS === "android") {
+    const base64 = XLSX.write(workbook, { bookType: "xlsx", type: "base64" }) as string;
+    await saveOnAndroid(baseFileName, base64);
+    return;
+  }
+
+  const bytes = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as number[];
   const { File, Paths } = await import("expo-file-system");
   const Sharing = await import("expo-sharing");
 
-  const file = new File(Paths.cache, fileName);
+  const file = new File(Paths.cache, `${baseFileName}.xlsx`);
   if (file.exists) {
     file.delete();
   }
   file.create();
-  file.write(bytes);
+  file.write(new Uint8Array(bytes));
 
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(file.uri, {
-      mimeType,
+      mimeType: MIME_TYPE,
       dialogTitle: "메소 플래너 가계부 내보내기",
     });
   }
