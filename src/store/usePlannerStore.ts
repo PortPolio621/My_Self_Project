@@ -18,6 +18,7 @@ interface PlannerActions {
   setWeeklyBossIncome: (amount: number) => void;
   confirmDailyHuntingIncome: (totalMeso: number) => void;
   setGoal: (goal: Goal | null) => void;
+  setIsPro: (isPro: boolean) => void;
   resetAll: () => void;
 }
 
@@ -35,6 +36,7 @@ const initialState: PlannerState = {
   huntingLog: [],
   huntingConfirmCount: 0,
   goal: null,
+  isPro: false,
 };
 
 export const usePlannerStore = create<PlannerState & PlannerActions>()(
@@ -97,6 +99,8 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
         }),
 
       setGoal: (goal) => set({ goal }),
+
+      setIsPro: (isPro) => set({ isPro }),
 
       resetAll: () => set(initialState),
     }),

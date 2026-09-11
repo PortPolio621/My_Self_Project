@@ -40,4 +40,6 @@ export interface PlannerState {
   huntingConfirmCount: number;
   /** 목표 아이템 (설정 전에는 null) */
   goal: Goal | null;
+  /** 프로 결제 여부 (실제 결제 연동 전까지는 테스트용 수동 토글) */
+  isPro: boolean;
 }
