@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
@@ -6,6 +6,7 @@ import { NumberField } from "@/components/NumberField";
 import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
+import { exportHuntingLogToExcel } from "@/utils/exportHuntingLog";
 import {
   FREE_TIER_LOG_WINDOW_DAYS,
   HUNTING_KILL_COUNT_MAX,
@@ -68,6 +69,24 @@ export function IncomeScreen() {
 
   const todayKey = getLocalDateKey();
   const todayEntry = state.huntingLog.find((entry) => entry.date === todayKey);
+
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportHuntingLogToExcel(state.huntingLog, {
+        totalSolErdaSoldCount: state.totalSolErdaSoldCount,
+        totalSolErdaSoldIncome: state.totalSolErdaSoldIncome,
+      });
+    } catch {
+      setExportError("내보내기에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <Screen>
@@ -211,6 +230,23 @@ export function IncomeScreen() {
             </Text>
           )
         )}
+
+        {state.isPro ? (
+          <>
+            <Pressable
+              style={styles.exportButton}
+              onPress={handleExport}
+              disabled={exporting || state.huntingLog.length === 0}
+            >
+              <Text style={styles.exportButtonText}>
+                {exporting ? "내보내는 중..." : "엑셀로 내보내기"}
+              </Text>
+            </Pressable>
+            {exportError && <Text style={styles.exportError}>{exportError}</Text>}
+          </>
+        ) : (
+          <Text style={styles.fieldNote}>엑셀 내보내기는 프로 전용 기능이에요.</Text>
+        )}
       </Card>
 
       <Text style={styles.hint}>
@@ -328,5 +364,23 @@ const styles = StyleSheet.create({
   hint: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+  exportButton: {
+    marginTop: 12,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  exportButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  exportError: {
+    color: colors.danger,
+    fontSize: 12,
+    marginTop: 8,
   },
 });
