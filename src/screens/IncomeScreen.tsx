@@ -7,6 +7,7 @@ import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { colors } from "@/theme/colors";
 import {
+  FREE_TIER_LOG_WINDOW_DAYS,
   HUNTING_KILL_COUNT_MAX,
   HUNTING_KILL_COUNT_MIN,
   formatMeso,
@@ -14,6 +15,7 @@ import {
   getDailyHuntingIncome,
   getLocalDateKey,
   getMesoPerMinuteFromKills,
+  getRelevantHuntingLog,
   getSolErdaFeeRate,
   getSolErdaIncome,
 } from "@/utils/meso";
@@ -60,7 +62,9 @@ export function IncomeScreen() {
   const solErdaFeeRate = getSolErdaFeeRate(state);
   const solErdaIncome = getSolErdaIncome(state);
   const dailyHuntingIncome = getDailyHuntingIncome(state);
-  const averageLoggedIncome = getAverageLoggedHuntingIncome(state.huntingLog);
+  const relevantHuntingLog = getRelevantHuntingLog(state.huntingLog, state.isPro);
+  const averageLoggedIncome = getAverageLoggedHuntingIncome(relevantHuntingLog);
+  const isLogLimited = !state.isPro && state.huntingLog.length > relevantHuntingLog.length;
 
   const todayKey = getLocalDateKey();
   const todayEntry = state.huntingLog.find((entry) => entry.date === todayKey);
@@ -173,7 +177,9 @@ export function IncomeScreen() {
         <Text style={styles.totalValue}>{formatMeso(dailyHuntingIncome)}</Text>
         <Pressable
           style={styles.confirmButton}
-          onPress={() => confirmDailyHuntingIncome(dailyHuntingIncome)}
+          onPress={() =>
+            confirmDailyHuntingIncome(dailyHuntingIncome, state.solErdaCount, solErdaIncome)
+          }
         >
           <Text style={styles.confirmButtonText}>확인 (가계부에 기록)</Text>
         </Pressable>
@@ -193,6 +199,18 @@ export function IncomeScreen() {
             : "아직 가계부 기록이 없어요. '확인'을 눌러 오늘 수입을 기록해보세요."}
         </Text>
         <Text style={styles.hint}>기록 횟수: {state.huntingConfirmCount}회</Text>
+        {isLogLimited ? (
+          <Text style={styles.fieldNote}>
+            무료 플랜은 평균 계산에 최근 {FREE_TIER_LOG_WINDOW_DAYS}일치 기록만 반영돼요. 이전
+            기록은 계속 보관되며, 프로로 전환하면 전체 기간이 바로 반영돼요.
+          </Text>
+        ) : (
+          !state.isPro && (
+            <Text style={styles.fieldNote}>
+              무료 플랜은 최근 {FREE_TIER_LOG_WINDOW_DAYS}일치 기록까지 평균에 반영돼요.
+            </Text>
+          )
+        )}
       </Card>
 
       <Text style={styles.hint}>

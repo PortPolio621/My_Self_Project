@@ -42,4 +42,8 @@ export interface PlannerState {
   goal: Goal | null;
   /** 프로 결제 여부 (실제 결제 연동 전까지는 테스트용 수동 토글) */
   isPro: boolean;
+  /** Pro 통계용: '확인'을 누를 때마다 누적된 판매 솔 에르다 조각 총 개수 */
+  totalSolErdaSoldCount: number;
+  /** Pro 통계용: '확인'을 누를 때마다 누적된 솔 에르다 조각 판매 순수익 총합 */
+  totalSolErdaSoldIncome: number;
 }
