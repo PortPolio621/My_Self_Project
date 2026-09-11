@@ -30,6 +30,8 @@ export interface PlannerState {
   solErdaPrice: number;
   /** 판매한 솔 에르다 조각 개수 */
   solErdaCount: number;
+  /** MVP 등급 경매장 수수료 할인 적용 여부 (미적용 시 5%, 적용 시 3%) */
+  useMvpDiscount: boolean;
   /** 주간 보스 총 수익 */
   weeklyBossIncome: number;
   /** 사냥 수입 가계부 기록 (날짜별 1건) */

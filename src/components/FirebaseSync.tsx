@@ -16,6 +16,7 @@ const SYNCED_KEYS = [
   "useUnionWealth",
   "solErdaPrice",
   "solErdaCount",
+  "useMvpDiscount",
   "weeklyBossIncome",
   "huntingLog",
   "huntingConfirmCount",
