@@ -14,6 +14,7 @@ import {
   getDailyHuntingIncome,
   getLocalDateKey,
   getMesoPerMinuteFromKills,
+  getSolErdaFeeRate,
   getSolErdaIncome,
 } from "@/utils/meso";
 
@@ -51,9 +52,12 @@ export function IncomeScreen() {
   const toggleUnionWealth = usePlannerStore((s) => s.toggleUnionWealth);
   const setSolErdaPrice = usePlannerStore((s) => s.setSolErdaPrice);
   const setSolErdaCount = usePlannerStore((s) => s.setSolErdaCount);
+  const toggleMvpDiscount = usePlannerStore((s) => s.toggleMvpDiscount);
   const confirmDailyHuntingIncome = usePlannerStore((s) => s.confirmDailyHuntingIncome);
 
   const mesoPerMinute = getMesoPerMinuteFromKills(state);
+  const solErdaGrossIncome = state.solErdaPrice * state.solErdaCount;
+  const solErdaFeeRate = getSolErdaFeeRate(state);
   const solErdaIncome = getSolErdaIncome(state);
   const dailyHuntingIncome = getDailyHuntingIncome(state);
   const averageLoggedIncome = getAverageLoggedHuntingIncome(state.huntingLog);
@@ -149,8 +153,18 @@ export function IncomeScreen() {
           unit="count"
           countLabel="개"
         />
-        {solErdaIncome > 0 && (
-          <Text style={styles.rateText}>조각 판매 수익: {formatMeso(solErdaIncome)}</Text>
+        <CheckboxRow
+          label="MVP 등급 적용 (경매장 수수료 5% → 3%)"
+          checked={state.useMvpDiscount}
+          onToggle={toggleMvpDiscount}
+        />
+        {solErdaGrossIncome > 0 && (
+          <>
+            <Text style={styles.fieldNote}>
+              수수료 {Math.round(solErdaFeeRate * 100)}% 제외한 순수익
+            </Text>
+            <Text style={styles.rateText}>조각 판매 수익: {formatMeso(solErdaIncome)}</Text>
+          </>
         )}
       </Card>
 

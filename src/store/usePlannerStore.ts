@@ -14,6 +14,7 @@ interface PlannerActions {
   toggleUnionWealth: () => void;
   setSolErdaPrice: (price: number) => void;
   setSolErdaCount: (count: number) => void;
+  toggleMvpDiscount: () => void;
   setWeeklyBossIncome: (amount: number) => void;
   confirmDailyHuntingIncome: (totalMeso: number) => void;
   setGoal: (goal: Goal | null) => void;
@@ -29,6 +30,7 @@ const initialState: PlannerState = {
   useUnionWealth: false,
   solErdaPrice: 0,
   solErdaCount: 0,
+  useMvpDiscount: false,
   weeklyBossIncome: 0,
   huntingLog: [],
   huntingConfirmCount: 0,
@@ -58,6 +60,9 @@ export const usePlannerStore = create<PlannerState & PlannerActions>()(
       setSolErdaPrice: (price) => set({ solErdaPrice: Math.max(price, 0) }),
 
       setSolErdaCount: (count) => set({ solErdaCount: Math.max(count, 0) }),
+
+      toggleMvpDiscount: () =>
+        set((state) => ({ useMvpDiscount: !state.useMvpDiscount })),
 
       setWeeklyBossIncome: (amount) =>
         set({ weeklyBossIncome: Math.max(amount, 0) }),

@@ -48,6 +48,19 @@ const ELIXIR_OF_WEALTH_MULTIPLIER = 1.2;
 /** 유니온의 부가 메소 획득량(%)에 더하는 값 */
 const UNION_WEALTH_BONUS_PERCENT = 50;
 
+/** 경매장 기본 수수료율 (MVP 미적용) */
+const SOL_ERDA_FEE_RATE_DEFAULT = 0.05;
+
+/** MVP 등급 적용 시 경매장 수수료율 */
+const SOL_ERDA_FEE_RATE_MVP = 0.03;
+
+/** MVP 등급 적용 여부에 따른 경매장 수수료율 */
+export function getSolErdaFeeRate(
+  state: Pick<PlannerState, "useMvpDiscount">
+): number {
+  return state.useMvpDiscount ? SOL_ERDA_FEE_RATE_MVP : SOL_ERDA_FEE_RATE_DEFAULT;
+}
+
 /** 사냥 마릿수(1젠 기준) → 시간당 마릿수 */
 export function getHourlyKillCount(huntingKillCount: number): number {
   return huntingKillCount * HOURLY_KILLS_PER_UNIT;
@@ -87,11 +100,12 @@ export function getMesoPerMinuteFromKills(
   return getPerMinuteKillCount(state.huntingKillCount) * getMesoPerKill(state);
 }
 
-/** 솔 에르다 조각 판매 수익 (개당 가격 × 판매 개수) */
+/** 솔 에르다 조각 판매 수익 (개당 가격 × 판매 개수에서 경매장 수수료를 뺀 순수익) */
 export function getSolErdaIncome(
-  state: Pick<PlannerState, "solErdaPrice" | "solErdaCount">
+  state: Pick<PlannerState, "solErdaPrice" | "solErdaCount" | "useMvpDiscount">
 ): number {
-  return state.solErdaPrice * state.solErdaCount;
+  const gross = state.solErdaPrice * state.solErdaCount;
+  return gross * (1 - getSolErdaFeeRate(state));
 }
 
 /** 사냥 마릿수 기반 수입 + 솔 에르다 조각 수익을 합산한, 지금 입력값 기준 사냥 수입 */
@@ -105,6 +119,7 @@ export function getDailyHuntingIncome(
     | "useElixirOfWealth"
     | "solErdaPrice"
     | "solErdaCount"
+    | "useMvpDiscount"
   >
 ): number {
   const mesoFromKills = getMesoPerMinuteFromKills(state) * state.huntingMinutes;
@@ -132,6 +147,7 @@ export function getEffectiveDailyHuntingIncome(
     | "useElixirOfWealth"
     | "solErdaPrice"
     | "solErdaCount"
+    | "useMvpDiscount"
     | "huntingLog"
   >
 ): number {
@@ -152,6 +168,7 @@ export function getDailyIncomeRate(
     | "useElixirOfWealth"
     | "solErdaPrice"
     | "solErdaCount"
+    | "useMvpDiscount"
     | "huntingLog"
     | "weeklyBossIncome"
   >
@@ -180,6 +197,7 @@ export function calculateGoalEta(
     | "useElixirOfWealth"
     | "solErdaPrice"
     | "solErdaCount"
+    | "useMvpDiscount"
     | "huntingLog"
     | "weeklyBossIncome"
   >,
