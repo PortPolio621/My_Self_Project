@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text } from "react-native";
 
 import { Card } from "@/components/Card";
 import { NumberField } from "@/components/NumberField";
 import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { colors } from "@/theme/colors";
+import { ColorPalette } from "@/theme/colors";
+import { useColors } from "@/theme/useColors";
 
 export function BossScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const weeklyBossIncome = usePlannerStore((s) => s.weeklyBossIncome);
   const setWeeklyBossIncome = usePlannerStore((s) => s.setWeeklyBossIncome);
 
@@ -32,19 +36,21 @@ export function BossScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    color: colors.text,
-    fontSize: 26,
-    fontWeight: "700",
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  card: {
-    marginBottom: 16,
-  },
-  hint: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    title: {
+      color: colors.text,
+      fontSize: 26,
+      fontWeight: "700",
+      marginTop: 8,
+      marginBottom: 20,
+    },
+    card: {
+      marginBottom: 16,
+    },
+    hint: {
+      color: colors.textMuted,
+      fontSize: 13,
+    },
+  });
+}
