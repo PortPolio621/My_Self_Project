@@ -4,7 +4,7 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,7 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/Card";
 import { auth } from "@/services/firebase";
-import { colors } from "@/theme/colors";
+import { ColorPalette } from "@/theme/colors";
+import { useColors } from "@/theme/useColors";
 
 function getErrorMessage(code: string): string {
   switch (code) {
@@ -43,6 +44,9 @@ function getErrorMessage(code: string): string {
 }
 
 export function AuthScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -145,7 +149,7 @@ export function AuthScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color={colors.background} />
+                <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <Text style={styles.submitButtonText}>
                   {mode === "login" ? "로그인" : "회원가입"}
@@ -184,7 +188,8 @@ export function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -247,7 +252,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   submitButtonText: {
-    color: colors.background,
+    color: colors.onPrimary,
     fontWeight: "700",
     fontSize: 15,
   },
@@ -259,4 +264,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
   },
-});
+  });
+}

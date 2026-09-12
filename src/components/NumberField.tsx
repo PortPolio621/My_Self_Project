@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { colors } from "@/theme/colors";
+import { ColorPalette } from "@/theme/colors";
+import { useColors } from "@/theme/useColors";
 import { formatMeso } from "@/utils/meso";
 
 interface NumberFieldProps {
@@ -24,6 +25,9 @@ export function NumberField({
   unit = "meso",
   countLabel = "개",
 }: NumberFieldProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -47,28 +51,30 @@ export function NumberField({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 12,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: colors.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  unitPreview: {
-    color: colors.primary,
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 12,
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginBottom: 6,
+    },
+    input: {
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      color: colors.text,
+      fontSize: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    unitPreview: {
+      color: colors.primary,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  });
+}
