@@ -6,12 +6,17 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "icon": "./assets/images/logo.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mesoplanner.app"
     },
     "android": {
-      "package": "com.mesoplanner.app"
+      "package": "com.mesoplanner.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#0F1220"
+      }
     },
     "web": {
       "bundler": "metro"
