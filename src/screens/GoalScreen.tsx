@@ -1,14 +1,18 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput } from "react-native";
 
 import { Card } from "@/components/Card";
 import { NumberField } from "@/components/NumberField";
 import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { colors } from "@/theme/colors";
+import { ColorPalette } from "@/theme/colors";
+import { useColors } from "@/theme/useColors";
 import { calculateGoalEta, formatMeso } from "@/utils/meso";
 
 export function GoalScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const state = usePlannerStore();
   const setGoal = usePlannerStore((s) => s.setGoal);
 
@@ -82,78 +86,80 @@ export function GoalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    color: colors.text,
-    fontSize: 26,
-    fontWeight: "700",
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  card: {
-    marginBottom: 16,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 6,
-  },
-  textInput: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: colors.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 12,
-  },
-  previewCard: {
-    backgroundColor: colors.surfaceAlt,
-    marginBottom: 16,
-  },
-  previewLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 6,
-  },
-  previewDays: {
-    color: colors.success,
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  previewRemaining: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  achieved: {
-    color: colors.success,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  warning: {
-    color: colors.danger,
-    fontSize: 13,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  saveButtonText: {
-    color: colors.background,
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  clearButton: {
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  clearButtonText: {
-    color: colors.danger,
-    fontSize: 13,
-  },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    title: {
+      color: colors.text,
+      fontSize: 26,
+      fontWeight: "700",
+      marginTop: 8,
+      marginBottom: 20,
+    },
+    card: {
+      marginBottom: 16,
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginBottom: 6,
+    },
+    textInput: {
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      color: colors.text,
+      fontSize: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+    },
+    previewCard: {
+      backgroundColor: colors.surfaceAlt,
+      marginBottom: 16,
+    },
+    previewLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginBottom: 6,
+    },
+    previewDays: {
+      color: colors.success,
+      fontSize: 22,
+      fontWeight: "700",
+      marginBottom: 6,
+    },
+    previewRemaining: {
+      color: colors.textMuted,
+      fontSize: 13,
+    },
+    achieved: {
+      color: colors.success,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    warning: {
+      color: colors.danger,
+      fontSize: 13,
+    },
+    saveButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    saveButtonText: {
+      color: colors.onPrimary,
+      fontWeight: "700",
+      fontSize: 15,
+    },
+    clearButton: {
+      alignItems: "center",
+      paddingVertical: 12,
+    },
+    clearButtonText: {
+      color: colors.danger,
+      fontSize: 13,
+    },
+  });
+}

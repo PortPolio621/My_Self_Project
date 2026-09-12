@@ -1,5 +1,5 @@
 import { sendEmailVerification, signOut } from "firebase/auth";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
@@ -7,7 +7,8 @@ import { Screen } from "@/components/Screen";
 import { auth } from "@/services/firebase";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { colors } from "@/theme/colors";
+import { ColorPalette } from "@/theme/colors";
+import { useColors } from "@/theme/useColors";
 import {
   calculateGoalEta,
   formatMeso,
@@ -16,9 +17,11 @@ import {
 } from "@/utils/meso";
 
 export function HomeScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const state = usePlannerStore();
   const resetAll = usePlannerStore((s) => s.resetAll);
-  const setIsPro = usePlannerStore((s) => s.setIsPro);
   const authUser = useAuthStore((s) => s.user);
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const dailyHuntingIncome = getEffectiveDailyHuntingIncome(state);
@@ -146,25 +149,6 @@ export function HomeScreen() {
         )}
       </Card>
 
-      <Card style={styles.card}>
-        <Text style={styles.cardLabel}>플랜</Text>
-        <Text style={styles.planValue}>
-          {state.isPro ? "메소 플래너 + 프로" : "무료"}
-        </Text>
-        <Text style={styles.fieldNote}>
-          아직 실제 결제는 연동되지 않았어요. 아래 버튼은 개발 중 기능 확인용 임시
-          스위치예요.
-        </Text>
-        <Pressable
-          style={styles.proToggleButton}
-          onPress={() => setIsPro(!state.isPro)}
-        >
-          <Text style={styles.proToggleButtonText}>
-            {state.isPro ? "프로 해제 (테스트용)" : "프로로 전환 (테스트용)"}
-          </Text>
-        </Pressable>
-      </Card>
-
       {state.isPro && (
         <Card style={styles.card}>
           <Text style={styles.cardLabel}>프로 통계 (누적)</Text>
@@ -197,174 +181,153 @@ export function HomeScreen() {
 
 const LOGO_ASPECT_RATIO = 265 / 257;
 
-const styles = StyleSheet.create({
-  header: {
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  logo: {
-    width: 190,
-    height: 190 / LOGO_ASPECT_RATIO,
-    marginBottom: 8,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 26,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  card: {
-    marginBottom: 16,
-  },
-  cardLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  mesoValue: {
-    color: colors.primary,
-    fontSize: 28,
-    fontWeight: "700",
-  },
-  incomeValue: {
-    color: colors.success,
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  breakdownRow: {
-    flexDirection: "column",
-    gap: 4,
-  },
-  breakdownText: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  goalName: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  goalPrice: {
-    color: colors.primary,
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  etaText: {
-    color: colors.success,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  remainingText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  achieved: {
-    color: colors.success,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  warning: {
-    color: colors.danger,
-    fontSize: 13,
-  },
-  planValue: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  fieldNote: {
-    color: colors.textMuted,
-    fontSize: 11,
-    marginBottom: 12,
-  },
-  proToggleButton: {
-    alignItems: "center",
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  proToggleButtonText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  statLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  statLabelSpaced: {
-    marginTop: 12,
-  },
-  statValue: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  verifyMessage: {
-    color: colors.primary,
-    fontSize: 12,
-    marginTop: 8,
-  },
-  verifyButtonRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
-  },
-  verifySecondaryButton: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  verifySecondaryButtonText: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  verifyPrimaryButton: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-  },
-  verifyPrimaryButtonText: {
-    color: colors.background,
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  accountText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 16,
-  },
-  resetButton: {
-    alignItems: "center",
-    paddingVertical: 12,
-    marginTop: 8,
-  },
-  logoutButtonText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    textDecorationLine: "underline",
-  },
-  resetButtonText: {
-    color: colors.danger,
-    fontSize: 13,
-    textDecorationLine: "underline",
-  },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    header: {
+      alignItems: "center",
+      marginTop: 8,
+      marginBottom: 20,
+    },
+    logo: {
+      width: 190,
+      height: 190 / LOGO_ASPECT_RATIO,
+      marginBottom: 8,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 26,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    card: {
+      marginBottom: 16,
+    },
+    cardLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginBottom: 8,
+    },
+    mesoValue: {
+      color: colors.primary,
+      fontSize: 28,
+      fontWeight: "700",
+    },
+    incomeValue: {
+      color: colors.success,
+      fontSize: 22,
+      fontWeight: "700",
+      marginBottom: 8,
+    },
+    breakdownRow: {
+      flexDirection: "column",
+      gap: 4,
+    },
+    breakdownText: {
+      color: colors.textMuted,
+      fontSize: 13,
+    },
+    emptyText: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    goalName: {
+      color: colors.text,
+      fontSize: 18,
+      fontWeight: "600",
+      marginBottom: 4,
+    },
+    goalPrice: {
+      color: colors.primary,
+      fontSize: 20,
+      fontWeight: "700",
+      marginBottom: 10,
+    },
+    etaText: {
+      color: colors.success,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    remainingText: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginTop: 4,
+    },
+    achieved: {
+      color: colors.success,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    warning: {
+      color: colors.danger,
+      fontSize: 13,
+    },
+    statLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginBottom: 4,
+    },
+    statLabelSpaced: {
+      marginTop: 12,
+    },
+    statValue: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    verifyMessage: {
+      color: colors.primary,
+      fontSize: 12,
+      marginTop: 8,
+    },
+    verifyButtonRow: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 12,
+    },
+    verifySecondaryButton: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    verifySecondaryButtonText: {
+      color: colors.textMuted,
+      fontSize: 13,
+    },
+    verifyPrimaryButton: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: 10,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+    },
+    verifyPrimaryButtonText: {
+      color: colors.onPrimary,
+      fontWeight: "700",
+      fontSize: 13,
+    },
+    accountText: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textAlign: "center",
+      marginTop: 16,
+    },
+    resetButton: {
+      alignItems: "center",
+      paddingVertical: 12,
+      marginTop: 8,
+    },
+    logoutButtonText: {
+      color: colors.textMuted,
+      fontSize: 13,
+      textDecorationLine: "underline",
+    },
+    resetButtonText: {
+      color: colors.danger,
+      fontSize: 13,
+      textDecorationLine: "underline",
+    },
+  });
+}

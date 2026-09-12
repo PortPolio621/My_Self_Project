@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { NumberField } from "@/components/NumberField";
 import { Screen } from "@/components/Screen";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { colors } from "@/theme/colors";
+import { ColorPalette } from "@/theme/colors";
+import { useColors } from "@/theme/useColors";
 import { exportHuntingLogToExcel } from "@/utils/exportHuntingLog";
 import {
   FREE_TIER_LOG_WINDOW_DAYS,
@@ -35,6 +36,9 @@ function CheckboxRow({
   checked: boolean;
   onToggle: () => void;
 }) {
+  const colors = useColors();
+  const styles = useMemo(() => createCheckboxStyles(colors), [colors]);
+
   return (
     <Pressable style={styles.checkboxRow} onPress={onToggle}>
       <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
@@ -46,6 +50,9 @@ function CheckboxRow({
 }
 
 export function IncomeScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const state = usePlannerStore();
   const setCurrentMeso = usePlannerStore((s) => s.setCurrentMeso);
   const setHuntingKillCount = usePlannerStore((s) => s.setHuntingKillCount);
@@ -74,7 +81,10 @@ export function IncomeScreen() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportSuccess, setExportSuccess] = useState(false);
 
+  const canExport = state.isPro && state.huntingLog.length > 0;
+
   const handleExport = async () => {
+    if (!state.isPro) return;
     setExporting(true);
     setExportError(null);
     setExportSuccess(false);
@@ -234,29 +244,28 @@ export function IncomeScreen() {
           )
         )}
 
-        {state.isPro ? (
-          <>
-            {Platform.OS === "android" && (
-              <Text style={styles.sectionNote}>
-                처음 한 번만 저장할 폴더를 선택하면, 다음부터는 바로 저장돼요.
-              </Text>
-            )}
-            <Pressable
-              style={styles.exportButton}
-              onPress={handleExport}
-              disabled={exporting || state.huntingLog.length === 0}
-            >
-              <Text style={styles.exportButtonText}>
-                {exporting ? "다운로드 중..." : "엑셀로 다운로드"}
-              </Text>
-            </Pressable>
-            {exportError && <Text style={styles.exportError}>{exportError}</Text>}
-            {exportSuccess && !exportError && Platform.OS !== "ios" && (
-              <Text style={styles.exportSuccess}>다운로드 완료!</Text>
-            )}
-          </>
-        ) : (
-          <Text style={styles.sectionNote}>엑셀 다운로드는 프로 전용 기능이에요.</Text>
+        {state.isPro && Platform.OS === "android" && (
+          <Text style={styles.sectionNote}>
+            처음 한 번만 저장할 폴더를 선택하면, 다음부터는 바로 저장돼요.
+          </Text>
+        )}
+        <Pressable
+          style={[styles.exportButton, !canExport && styles.exportButtonDisabled]}
+          onPress={handleExport}
+          disabled={!canExport || exporting}
+        >
+          <Text style={styles.exportButtonText}>
+            {exporting ? "다운로드 중..." : "엑셀로 다운로드"}
+          </Text>
+        </Pressable>
+        {!state.isPro && (
+          <Text style={styles.sectionNote}>
+            엑셀 다운로드는 프로 전용 기능이에요. 설정 탭에서 프로를 확인해보세요.
+          </Text>
+        )}
+        {exportError && <Text style={styles.exportError}>{exportError}</Text>}
+        {exportSuccess && !exportError && Platform.OS !== "ios" && (
+          <Text style={styles.exportSuccess}>다운로드 완료!</Text>
         )}
       </Card>
 
@@ -267,142 +276,152 @@ export function IncomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    color: colors.text,
-    fontSize: 26,
-    fontWeight: "700",
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  card: {
-    marginBottom: 16,
-  },
-  cardLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  chipTextSelected: {
-    color: colors.background,
-  },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
-  checkmark: {
-    color: colors.background,
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  checkboxLabel: {
-    color: colors.text,
-    fontSize: 14,
-    flex: 1,
-  },
-  rateText: {
-    color: colors.primary,
-    fontSize: 13,
-    marginBottom: 12,
-  },
-  fieldNote: {
-    color: colors.textMuted,
-    fontSize: 11,
-    marginTop: -8,
-    marginBottom: 12,
-  },
-  sectionNote: {
-    color: colors.textMuted,
-    fontSize: 11,
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  totalValue: {
-    color: colors.success,
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  confirmButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  confirmButtonText: {
-    color: colors.background,
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  hint: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  exportButton: {
-    marginTop: 12,
-    alignItems: "center",
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  exportButtonText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  exportError: {
-    color: colors.danger,
-    fontSize: 12,
-    marginTop: 8,
-  },
-  exportSuccess: {
-    color: colors.success,
-    fontSize: 12,
-    marginTop: 8,
-  },
-});
+function createCheckboxStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    checkboxRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 10,
+    },
+    checkboxChecked: {
+      backgroundColor: colors.success,
+      borderColor: colors.success,
+    },
+    checkmark: {
+      color: colors.onPrimary,
+      fontWeight: "700",
+      fontSize: 13,
+    },
+    checkboxLabel: {
+      color: colors.text,
+      fontSize: 14,
+      flex: 1,
+    },
+  });
+}
+
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    title: {
+      color: colors.text,
+      fontSize: 26,
+      fontWeight: "700",
+      marginTop: 8,
+      marginBottom: 20,
+    },
+    card: {
+      marginBottom: 16,
+    },
+    cardLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      marginBottom: 8,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+      marginBottom: 12,
+    },
+    chipRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 12,
+    },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    chipText: {
+      color: colors.textMuted,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    chipTextSelected: {
+      color: colors.onPrimary,
+    },
+    rateText: {
+      color: colors.primary,
+      fontSize: 13,
+      marginBottom: 12,
+    },
+    fieldNote: {
+      color: colors.textMuted,
+      fontSize: 11,
+      marginTop: -8,
+      marginBottom: 12,
+    },
+    sectionNote: {
+      color: colors.textMuted,
+      fontSize: 11,
+      marginTop: 4,
+      marginBottom: 12,
+    },
+    totalValue: {
+      color: colors.success,
+      fontSize: 22,
+      fontWeight: "700",
+      marginBottom: 12,
+    },
+    confirmButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    confirmButtonText: {
+      color: colors.onPrimary,
+      fontWeight: "700",
+      fontSize: 15,
+    },
+    hint: {
+      color: colors.textMuted,
+      fontSize: 13,
+    },
+    exportButton: {
+      marginTop: 12,
+      alignItems: "center",
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    exportButtonDisabled: {
+      opacity: 0.4,
+    },
+    exportButtonText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    exportError: {
+      color: colors.danger,
+      fontSize: 12,
+      marginTop: 8,
+    },
+    exportSuccess: {
+      color: colors.success,
+      fontSize: 12,
+      marginTop: 8,
+    },
+  });
+}
