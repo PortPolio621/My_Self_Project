@@ -1,5 +1,14 @@
-import React, { useMemo } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Linking,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
@@ -15,10 +24,21 @@ import { useColors } from "@/theme/useColors";
 
 const SESSION_DURATION_OPTIONS: SessionDuration[] = ["none", "3h", "6h", "forever"];
 
-/** 아직 실제 결제(RevenueCat 등)가 연동되지 않아 테스트용으로 쓰는 월 구독 가격 */
+/** 아직 실제 결제(RevenueCat 등)가 연동되지 않아 시연용으로 쓰는 월 구독 가격 */
 const PRO_PRICE_LABEL = "월 3,300원";
 
 const PRIVACY_POLICY_URL = "https://claude.ai/artifact/7dEdsyGn2fah5qHJeusDF4";
+
+/** 결제 진행 화면이 보여지는 시간(ms). 실제 결제가 없으니 연출용으로만 사용 */
+const PROCESSING_DELAY_MS = 1400;
+
+type CheckoutStep = "idle" | "confirm" | "processing" | "success";
+type PaymentMethod = "card" | "kakaopay";
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  card: "신용·체크카드",
+  kakaopay: "카카오페이",
+};
 
 export function SettingsScreen() {
   const colors = useColors();
@@ -32,6 +52,37 @@ export function SettingsScreen() {
 
   const isPro = usePlannerStore((s) => s.isPro);
   const setIsPro = usePlannerStore((s) => s.setIsPro);
+
+  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("idle");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const processingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (processingTimer.current) clearTimeout(processingTimer.current);
+    };
+  }, []);
+
+  const openCheckout = () => {
+    setPaymentMethod("card");
+    setAgreedToTerms(false);
+    setCheckoutStep("confirm");
+  };
+
+  const closeCheckout = () => {
+    if (processingTimer.current) clearTimeout(processingTimer.current);
+    setCheckoutStep("idle");
+  };
+
+  const handlePay = () => {
+    if (!agreedToTerms) return;
+    setCheckoutStep("processing");
+    processingTimer.current = setTimeout(() => {
+      setIsPro(true);
+      setCheckoutStep("success");
+    }, PROCESSING_DELAY_MS);
+  };
 
   return (
     <Screen>
@@ -91,11 +142,11 @@ export function SettingsScreen() {
             <Text style={styles.sectionNote}>
               가계부 무제한 보관, 엑셀 내보내기, 누적 통계 등을 이용할 수 있어요.
             </Text>
-            <Pressable style={styles.proButton} onPress={() => setIsPro(true)}>
+            <Pressable style={styles.proButton} onPress={openCheckout}>
               <Text style={styles.proButtonText}>프로 시작하기</Text>
             </Pressable>
             <Text style={styles.proTestNote}>
-              결제 연동 전 임시 버튼이에요. 실제 결제는 아직 청구되지 않아요.
+              결제 연동 전 시연용 화면이에요. 실제 결제는 청구되지 않아요.
             </Text>
           </>
         ) : (
@@ -118,6 +169,109 @@ export function SettingsScreen() {
           <Text style={styles.linkRowChevron}>›</Text>
         </Pressable>
       </Card>
+
+      <Modal
+        visible={checkoutStep !== "idle"}
+        animationType="slide"
+        onRequestClose={() => {
+          if (checkoutStep !== "processing") closeCheckout();
+        }}
+      >
+        {checkoutStep === "confirm" && (
+          <Screen>
+            <View style={styles.modalHeader}>
+              <Pressable onPress={closeCheckout} hitSlop={12}>
+                <Text style={styles.backArrow}>‹</Text>
+              </Pressable>
+              <Text style={styles.modalTitle}>결제 확인</Text>
+            </View>
+
+            <Card style={styles.card}>
+              <Text style={styles.sectionNote}>주문 내역</Text>
+              <Text style={styles.planStatus}>메소 플래너 + 프로</Text>
+              <Text style={styles.sectionNote}>월 3,300원 · 매월 자동 결제</Text>
+              <View style={styles.chipRow}>
+                <View style={styles.benefitChip}>
+                  <Text style={styles.benefitChipText}>무제한 보관</Text>
+                </View>
+                <View style={styles.benefitChip}>
+                  <Text style={styles.benefitChipText}>엑셀 내보내기</Text>
+                </View>
+                <View style={styles.benefitChip}>
+                  <Text style={styles.benefitChipText}>누적 통계</Text>
+                </View>
+              </View>
+            </Card>
+
+            <Text style={styles.sectionTitle}>결제 수단</Text>
+            {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map((method) => (
+              <Pressable
+                key={method}
+                style={[styles.payOption, paymentMethod === method && styles.payOptionSelected]}
+                onPress={() => setPaymentMethod(method)}
+              >
+                <View
+                  style={[styles.payDot, paymentMethod === method && styles.payDotSelected]}
+                >
+                  {paymentMethod === method && <View style={styles.payDotFill} />}
+                </View>
+                <Text style={styles.payOptionText}>{PAYMENT_METHOD_LABELS[method]}</Text>
+              </Pressable>
+            ))}
+
+            <Pressable
+              style={styles.termsRow}
+              onPress={() => setAgreedToTerms((prev) => !prev)}
+            >
+              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.termsText}>구매 조건 및 자동결제에 동의합니다</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.proButton, !agreedToTerms && styles.proButtonDisabled]}
+              onPress={handlePay}
+              disabled={!agreedToTerms}
+            >
+              <Text style={styles.proButtonText}>3,300원 결제하기</Text>
+            </Pressable>
+            <Text style={styles.proTestNote}>
+              실제 결제는 청구되지 않는 시연용 화면이에요.
+            </Text>
+          </Screen>
+        )}
+
+        {checkoutStep === "processing" && (
+          <SafeAreaView style={styles.checkoutCenterScreen}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.planStatus}>결제를 처리하고 있어요</Text>
+            <Text style={styles.sectionNote}>잠시만 기다려주세요</Text>
+          </SafeAreaView>
+        )}
+
+        {checkoutStep === "success" && (
+          <SafeAreaView style={styles.checkoutCenterScreen}>
+            <View style={styles.checkBadge}>
+              <Text style={styles.checkBadgeText}>✓</Text>
+            </View>
+            <Text style={styles.successTitle}>프로가 시작됐어요!</Text>
+            <Text style={styles.successSub}>
+              이제 가계부를 무제한으로 보관하고 엑셀로 내보낼 수 있어요
+            </Text>
+            <Card style={styles.statusCard}>
+              <Text style={styles.sectionNote}>현재 플랜</Text>
+              <Text style={styles.planStatus}>프로</Text>
+            </Card>
+            <Pressable
+              style={[styles.proButton, styles.checkoutButtonWidth]}
+              onPress={closeCheckout}
+            >
+              <Text style={styles.proButtonText}>확인</Text>
+            </Pressable>
+          </SafeAreaView>
+        )}
+      </Modal>
     </Screen>
   );
 }
@@ -208,6 +362,9 @@ function createStyles(colors: ColorPalette) {
       paddingVertical: 12,
       alignItems: "center",
     },
+    proButtonDisabled: {
+      opacity: 0.4,
+    },
     proButtonText: {
       color: colors.onPrimary,
       fontWeight: "700",
@@ -243,6 +400,147 @@ function createStyles(colors: ColorPalette) {
     linkRowChevron: {
       color: colors.textMuted,
       fontSize: 20,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginTop: 8,
+      marginBottom: 20,
+    },
+    backArrow: {
+      color: colors.textMuted,
+      fontSize: 26,
+      fontWeight: "700",
+      paddingRight: 2,
+    },
+    modalTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    benefitChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    benefitChipText: {
+      color: colors.textMuted,
+      fontSize: 11,
+    },
+    payOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 10,
+    },
+    payOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surfaceAlt,
+    },
+    payOptionText: {
+      color: colors.text,
+      fontSize: 14,
+    },
+    payDot: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 2,
+      borderColor: colors.textMuted,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    payDotSelected: {
+      borderColor: colors.primary,
+    },
+    payDotFill: {
+      width: 9,
+      height: 9,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+    },
+    termsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 6,
+      marginBottom: 20,
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxChecked: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    checkmark: {
+      color: colors.onPrimary,
+      fontWeight: "700",
+      fontSize: 12,
+    },
+    termsText: {
+      color: colors.textMuted,
+      fontSize: 12.5,
+      flex: 1,
+    },
+    checkoutCenterScreen: {
+      flex: 1,
+      backgroundColor: colors.background,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+      gap: 12,
+    },
+    checkBadge: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 4,
+    },
+    checkBadgeText: {
+      color: colors.onPrimary,
+      fontSize: 30,
+      fontWeight: "700",
+    },
+    successTitle: {
+      color: colors.text,
+      fontSize: 19,
+      fontWeight: "700",
+    },
+    successSub: {
+      color: colors.textMuted,
+      fontSize: 13,
+      textAlign: "center",
+      maxWidth: 240,
+      marginBottom: 6,
+    },
+    statusCard: {
+      width: "100%",
+      maxWidth: 320,
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    checkoutButtonWidth: {
+      width: "100%",
+      maxWidth: 320,
     },
   });
 }
