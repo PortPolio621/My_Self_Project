@@ -40,6 +40,34 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   kakaopay: "카카오페이",
 };
 
+interface MockCard {
+  id: string;
+  badgeText: string;
+  badgeColor: string;
+  label: string;
+  sub: string;
+}
+
+/** 실제로 등록된 카드가 아니라, 결제 화면을 그럴듯하게 보여주기 위한 시연용 목록 */
+const MOCK_CARDS: MockCard[] = [
+  { id: "card1", badgeText: "신한", badgeColor: "#0046FF", label: "신한카드 체크", sub: "•••• •••• •••• 4821" },
+  { id: "card2", badgeText: "KB", badgeColor: "#FFBC00", label: "국민카드 신용", sub: "•••• •••• •••• 7305" },
+  { id: "card3", badgeText: "삼성", badgeColor: "#1428A0", label: "삼성카드 신용", sub: "•••• •••• •••• 1190" },
+];
+
+interface MockKakaoAccount {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+/** 실제로 연동된 계정이 아니라, 결제 화면을 그럴듯하게 보여주기 위한 시연용 목록 */
+const MOCK_KAKAO_ACCOUNTS: MockKakaoAccount[] = [
+  { id: "kakao1", name: "홍길동", phone: "010-****-1234" },
+  { id: "kakao2", name: "김철수", phone: "010-****-5678" },
+  { id: "kakao3", name: "이영희", phone: "010-****-9012" },
+];
+
 export function SettingsScreen() {
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -55,6 +83,10 @@ export function SettingsScreen() {
 
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("idle");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [selectedCardId, setSelectedCardId] = useState(MOCK_CARDS[0].id);
+  const [selectedKakaoAccountId, setSelectedKakaoAccountId] = useState(
+    MOCK_KAKAO_ACCOUNTS[0].id
+  );
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const processingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -66,6 +98,8 @@ export function SettingsScreen() {
 
   const openCheckout = () => {
     setPaymentMethod("card");
+    setSelectedCardId(MOCK_CARDS[0].id);
+    setSelectedKakaoAccountId(MOCK_KAKAO_ACCOUNTS[0].id);
     setAgreedToTerms(false);
     setCheckoutStep("confirm");
   };
@@ -205,18 +239,87 @@ export function SettingsScreen() {
 
             <Text style={styles.sectionTitle}>결제 수단</Text>
             {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map((method) => (
-              <Pressable
-                key={method}
-                style={[styles.payOption, paymentMethod === method && styles.payOptionSelected]}
-                onPress={() => setPaymentMethod(method)}
-              >
-                <View
-                  style={[styles.payDot, paymentMethod === method && styles.payDotSelected]}
+              <View key={method}>
+                <Pressable
+                  style={[
+                    styles.payOption,
+                    paymentMethod === method && styles.payOptionSelected,
+                  ]}
+                  onPress={() => setPaymentMethod(method)}
                 >
-                  {paymentMethod === method && <View style={styles.payDotFill} />}
-                </View>
-                <Text style={styles.payOptionText}>{PAYMENT_METHOD_LABELS[method]}</Text>
-              </Pressable>
+                  <View
+                    style={[styles.payDot, paymentMethod === method && styles.payDotSelected]}
+                  >
+                    {paymentMethod === method && <View style={styles.payDotFill} />}
+                  </View>
+                  <Text style={styles.payOptionText}>{PAYMENT_METHOD_LABELS[method]}</Text>
+                </Pressable>
+
+                {paymentMethod === method && method === "card" && (
+                  <View style={styles.instrumentList}>
+                    {MOCK_CARDS.map((card) => (
+                      <Pressable
+                        key={card.id}
+                        style={[
+                          styles.instrumentRow,
+                          selectedCardId === card.id && styles.instrumentRowSelected,
+                        ]}
+                        onPress={() => setSelectedCardId(card.id)}
+                      >
+                        <View style={[styles.cardBadge, { backgroundColor: card.badgeColor }]}>
+                          <Text style={styles.cardBadgeText}>{card.badgeText}</Text>
+                        </View>
+                        <View style={styles.instrumentTextCol}>
+                          <Text style={styles.instrumentLabel}>{card.label}</Text>
+                          <Text style={styles.instrumentSub}>{card.sub}</Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.payDot,
+                            selectedCardId === card.id && styles.payDotSelected,
+                          ]}
+                        >
+                          {selectedCardId === card.id && <View style={styles.payDotFill} />}
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
+                {paymentMethod === method && method === "kakaopay" && (
+                  <View style={styles.instrumentList}>
+                    {MOCK_KAKAO_ACCOUNTS.map((account) => (
+                      <Pressable
+                        key={account.id}
+                        style={[
+                          styles.instrumentRow,
+                          selectedKakaoAccountId === account.id &&
+                            styles.instrumentRowSelected,
+                        ]}
+                        onPress={() => setSelectedKakaoAccountId(account.id)}
+                      >
+                        <View style={styles.kakaoBadge}>
+                          <Text style={styles.kakaoBadgeText}>K</Text>
+                        </View>
+                        <View style={styles.instrumentTextCol}>
+                          <Text style={styles.instrumentLabel}>{account.name}</Text>
+                          <Text style={styles.instrumentSub}>{account.phone}</Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.payDot,
+                            selectedKakaoAccountId === account.id && styles.payDotSelected,
+                          ]}
+                        >
+                          {selectedKakaoAccountId === account.id && (
+                            <View style={styles.payDotFill} />
+                          )}
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
             ))}
 
             <Pressable
@@ -467,6 +570,64 @@ function createStyles(colors: ColorPalette) {
       height: 9,
       borderRadius: 5,
       backgroundColor: colors.primary,
+    },
+    instrumentList: {
+      marginLeft: 12,
+      marginBottom: 10,
+      gap: 8,
+    },
+    instrumentRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    instrumentRowSelected: {
+      borderColor: colors.primary,
+    },
+    instrumentTextCol: {
+      flex: 1,
+    },
+    instrumentLabel: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: "600",
+      marginBottom: 2,
+    },
+    instrumentSub: {
+      color: colors.textMuted,
+      fontSize: 11.5,
+      fontVariant: ["tabular-nums"],
+    },
+    cardBadge: {
+      width: 34,
+      height: 24,
+      borderRadius: 5,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 10,
+      fontWeight: "700",
+    },
+    kakaoBadge: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: "#FEE500",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    kakaoBadgeText: {
+      color: "#3C1E1E",
+      fontSize: 12,
+      fontWeight: "700",
     },
     termsRow: {
       flexDirection: "row",
