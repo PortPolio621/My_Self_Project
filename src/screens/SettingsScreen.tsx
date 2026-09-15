@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
@@ -17,6 +17,8 @@ const SESSION_DURATION_OPTIONS: SessionDuration[] = ["none", "3h", "6h", "foreve
 
 /** 아직 실제 결제(RevenueCat 등)가 연동되지 않아 테스트용으로 쓰는 월 구독 가격 */
 const PRO_PRICE_LABEL = "월 3,300원";
+
+const PRIVACY_POLICY_URL = "https://claude.ai/artifact/7dEdsyGn2fah5qHJeusDF4";
 
 export function SettingsScreen() {
   const colors = useColors();
@@ -104,6 +106,17 @@ export function SettingsScreen() {
             </Pressable>
           </>
         )}
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={styles.sectionTitle}>정보</Text>
+        <Pressable
+          style={styles.linkRow}
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+        >
+          <Text style={styles.linkRowText}>개인정보처리방침</Text>
+          <Text style={styles.linkRowChevron}>›</Text>
+        </Pressable>
       </Card>
     </Screen>
   );
@@ -216,6 +229,20 @@ function createStyles(colors: ColorPalette) {
     proSecondaryButtonText: {
       color: colors.textMuted,
       fontSize: 13,
+    },
+    linkRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 4,
+    },
+    linkRowText: {
+      color: colors.text,
+      fontSize: 15,
+    },
+    linkRowChevron: {
+      color: colors.textMuted,
+      fontSize: 20,
     },
   });
 }
